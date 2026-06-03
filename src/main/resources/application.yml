@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: trustzero-escrow-engine
+
+  datasource:
+
+    url: jdbc:postgresql://localhost:5432/escrow_db
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update      # Automatically creates/updates your database tables based on your Java code
+    show-sql: true          # Prints SQL to your console (crucial for debugging our locks later)
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: myhydroxideion_workshop_dumbledore_paperplate_orangebag_
+  expiration: 86400000

@@ -7,11 +7,16 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest (
-    @NotBlank String name,
+    @NotBlank(message = "Name cannot be empty")
+    String name,
 
-    @Email @NotBlank String email,
+    @Email(message = "Must be a valid email address")
+    @NotBlank(message = "Email cannot be empty")
+    String email,
 
-    @NotBlank @Size(min = 6) String password,
+    @NotBlank(message = "Password cannot be empty")
+    @Size(min = 6, message = "Password must be at least 6 characters") String password,
 
-    @NotNull UserRole role
+    @NotNull(message = "Role is required (BUYER, SELLER or ADMIN")
+    UserRole role
 ){}

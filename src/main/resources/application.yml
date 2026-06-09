@@ -3,11 +3,9 @@ spring:
     name: trustzero-escrow-engine
 
   datasource:
-
     url: jdbc:postgresql://localhost:5432/escrow_db
     username: postgres
-    password: password
-    driver-class-name: org.postgresql.Driver
+    password: ${DB_PASSWORD:password}
 
   jpa:
     hibernate:
@@ -18,5 +16,5 @@ spring:
         format_sql: true
 
 jwt:
-  secret: myhydroxideion_workshop_dumbledore_paperplate_orangebag_
+  secret: ${JWT_SECRET}               #environment variable mein daala hai. toh vaha se lega yeh.
   expiration: 86400000

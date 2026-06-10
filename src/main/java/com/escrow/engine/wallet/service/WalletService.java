@@ -1,5 +1,6 @@
 package com.escrow.engine.wallet.service;
 
+import com.escrow.engine.common.exception.InsufficientFundsException;
 import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.payment.PaymentProvider;
 import com.escrow.engine.user.entity.User;
@@ -10,6 +11,7 @@ import com.escrow.engine.wallet.entity.Wallet;
 import com.escrow.engine.wallet.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -44,6 +46,19 @@ public class WalletService {
 
         Wallet savedWallet = walletRepository.save(wallet);
         return mapToResponse(savedWallet);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void debitWallet(Long userId, BigDecimal amount) {
+        Wallet wallet = walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
+
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientFundsException("Insufficient funds. Wallet balance: " + wallet.getBalance() + ", Required: " + amount);
+        }
+
+        wallet.setBalance(wallet.getBalance().subtract(amount));
+        walletRepository.save(wallet);
     }
 
 

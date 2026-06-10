@@ -6,9 +6,11 @@ import com.escrow.engine.escrow.dto.EscrowResponse;
 import com.escrow.engine.escrow.entity.EscrowTransaction;
 import com.escrow.engine.escrow.enums.TransactionStatus;
 import com.escrow.engine.escrow.repository.EscrowRepository;
+import com.escrow.engine.escrow.service.fsm.EscrowStateValidator;
 import com.escrow.engine.user.entity.User;
 import com.escrow.engine.user.enums.UserRole;
 import com.escrow.engine.user.repository.UserRepository;
+import com.escrow.engine.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ public class EscrowService {
 
     private final EscrowRepository escrowRepository;
     private final UserRepository userRepository;
+    private final EscrowStateValidator stateValidator;
+    private final WalletService walletService;
 
     @Transactional
     public EscrowResponse createEscrow(String buyerEmail, CreateEscrowRequest request) {
@@ -45,6 +49,27 @@ public class EscrowService {
                 .build();
 
         EscrowTransaction savedTx = escrowRepository.save(transaction);
+        return mapToResponse(savedTx);
+    }
+
+    @Transactional
+    public EscrowResponse fundEscrow(String buyerEmail, Long escrowId) {
+
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
+        User buyer = userRepository.findByEmail(buyerEmail).orElseThrow();
+
+        if (!tx.getBuyer().getId().equals(buyer.getId())) {
+            throw new RuntimeException("Unauthorized: You are not the buyer of this transaction");
+        }
+
+        stateValidator.validate(tx.getStatus(), TransactionStatus.FUNDED);
+
+        walletService.debitWallet(buyer.getId(), tx.getAmount());
+
+        tx.setStatus(TransactionStatus.FUNDED);
+        EscrowTransaction savedTx = escrowRepository.save(tx);
+
         return mapToResponse(savedTx);
     }
 

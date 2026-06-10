@@ -32,4 +32,9 @@ public class EscrowController {
     public ResponseEntity<EscrowResponse> getEscrow(@PathVariable Long id) {
         return ResponseEntity.ok(escrowService.getEscrowById(id));
     }
+
+    @PostMapping("/{id}/fund")
+    public ResponseEntity<EscrowResponse> fundEscrow(@PathVariable Long id, Principal principal){
+        return ResponseEntity.ok(escrowService.fundEscrow(principal.getName(), id));
+    }
 }

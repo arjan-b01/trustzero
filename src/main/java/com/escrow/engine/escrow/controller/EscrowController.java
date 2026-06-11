@@ -1,6 +1,7 @@
 package com.escrow.engine.escrow.controller;
 
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
+import com.escrow.engine.escrow.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
 import com.escrow.engine.escrow.service.EscrowService;
 import jakarta.validation.Valid;
@@ -36,5 +37,20 @@ public class EscrowController {
     @PostMapping("/{id}/fund")
     public ResponseEntity<EscrowResponse> fundEscrow(@PathVariable Long id, Principal principal){
         return ResponseEntity.ok(escrowService.fundEscrow(principal.getName(), id));
+    }
+
+    @PostMapping("/{id}/release")
+    public ResponseEntity<EscrowResponse> releaseFunds(
+            @PathVariable Long id,
+            Principal principal) {
+        return ResponseEntity.ok(escrowService.releaseFunds(principal.getName(), id));
+    }
+
+    @PostMapping("/{id}/dispute")
+    public ResponseEntity<EscrowResponse> openDispute(
+            @PathVariable Long id,
+            @Valid @RequestBody DisputeRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(escrowService.openDispute(principal.getName(), id, request));
     }
 }

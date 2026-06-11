@@ -61,6 +61,15 @@ public class WalletService {
         walletRepository.save(wallet);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void creditWallet(Long userId, BigDecimal amount) {
+        Wallet wallet = walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
+
+        wallet.setBalance(wallet.getBalance().add(amount));
+        walletRepository.save(wallet);
+    }
+
 
     private User getUserByEmail(String email) {
         return userRepository.findByEmail(email)

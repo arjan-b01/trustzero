@@ -4,7 +4,9 @@ import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
 import com.escrow.engine.escrow.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
+import com.escrow.engine.escrow.dto.ResolveDisputeRequest;
 import com.escrow.engine.escrow.entity.EscrowTransaction;
+import com.escrow.engine.escrow.enums.DisputeResolution;
 import com.escrow.engine.escrow.enums.TransactionStatus;
 import com.escrow.engine.escrow.repository.EscrowRepository;
 import com.escrow.engine.escrow.service.fsm.EscrowStateValidator;
@@ -113,6 +115,36 @@ public class EscrowService {
         tx.setDisputeReason(request.reason());
         EscrowTransaction savedTx = escrowRepository.save(tx);
 
+        return mapToResponse(savedTx);
+    }
+
+    @Transactional
+    public EscrowResponse resolveDispute(String adminEmail, Long escrowId, ResolveDisputeRequest request) {
+        User admin = userRepository.findByEmail(adminEmail).orElseThrow();
+
+        if (admin.getRole() != UserRole.ADMIN) {
+            throw new RuntimeException("Unauthorized: Only administrators can resolve disputes");
+        }
+
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
+
+        TransactionStatus targetStatus = (request.resolution() == DisputeResolution.RELEASE_TO_SELLER)
+                ? TransactionStatus.RELEASED
+                : TransactionStatus.REFUNDED;
+
+        stateValidator.validate(tx.getStatus(), targetStatus);
+
+        if (request.resolution() == DisputeResolution.RELEASE_TO_SELLER) {
+            walletService.creditWallet(tx.getSeller().getId(), tx.getAmount());
+        } else if (request.resolution() == DisputeResolution.REFUND_TO_BUYER) {
+            walletService.creditWallet(tx.getBuyer().getId(), tx.getAmount());
+        }
+
+        tx.setStatus(targetStatus);
+        tx.setDisputeReason("DISPUTE RESOLVED: " + request.adminNotes() + " | Original Reason: " + tx.getDisputeReason());
+
+        EscrowTransaction savedTx = escrowRepository.save(tx);
         return mapToResponse(savedTx);
     }
 

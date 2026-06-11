@@ -3,6 +3,7 @@ package com.escrow.engine.escrow.controller;
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
 import com.escrow.engine.escrow.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
+import com.escrow.engine.escrow.dto.ResolveDisputeRequest;
 import com.escrow.engine.escrow.service.EscrowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,13 @@ public class EscrowController {
             @Valid @RequestBody DisputeRequest request,
             Principal principal) {
         return ResponseEntity.ok(escrowService.openDispute(principal.getName(), id, request));
+    }
+
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<EscrowResponse> resolveDispute(
+            @PathVariable Long id,
+            @Valid @RequestBody ResolveDisputeRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(escrowService.resolveDispute(principal.getName(), id, request));
     }
 }

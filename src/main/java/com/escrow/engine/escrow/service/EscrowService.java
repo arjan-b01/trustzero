@@ -68,7 +68,7 @@ public class EscrowService {
 
         stateValidator.validate(tx.getStatus(), TransactionStatus.FUNDED);
 
-        walletService.debitWallet(buyer.getId(), tx.getAmount());
+        walletService.debitWallet(buyer.getId(), tx.getAmount(), tx.getId(), "ESCROW_FUNDED", "Buyer locked funds into escrow contract");
 
         tx.setStatus(TransactionStatus.FUNDED);
         EscrowTransaction savedTx = escrowRepository.save(tx);
@@ -88,7 +88,7 @@ public class EscrowService {
 
         stateValidator.validate(tx.getStatus(), TransactionStatus.RELEASED);
 
-        walletService.creditWallet(tx.getSeller().getId(), tx.getAmount());
+        walletService.creditWallet(tx.getSeller().getId(), tx.getAmount(), tx.getId(), "ESCROW_RELEASED", "Funds released to seller by buyer");
 
         tx.setStatus(TransactionStatus.RELEASED);
         EscrowTransaction savedTx = escrowRepository.save(tx);
@@ -136,9 +136,9 @@ public class EscrowService {
         stateValidator.validate(tx.getStatus(), targetStatus);
 
         if (request.resolution() == DisputeResolution.RELEASE_TO_SELLER) {
-            walletService.creditWallet(tx.getSeller().getId(), tx.getAmount());
+            walletService.creditWallet(tx.getSeller().getId(), tx.getAmount(), tx.getId(), "DISPUTE_RELEASED", "Admin released funds to seller. Notes: " + request.adminNotes());
         } else if (request.resolution() == DisputeResolution.REFUND_TO_BUYER) {
-            walletService.creditWallet(tx.getBuyer().getId(), tx.getAmount());
+            walletService.creditWallet(tx.getBuyer().getId(), tx.getAmount(), tx.getId(), "DISPUTE_REFUNDED", "Admin refunded buyer. Notes: " + request.adminNotes());
         }
 
         tx.setStatus(targetStatus);

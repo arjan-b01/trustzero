@@ -1,5 +1,6 @@
 package com.escrow.engine.wallet.service;
 
+import com.escrow.engine.audit.service.AuditLogService;
 import com.escrow.engine.common.exception.InsufficientFundsException;
 import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.payment.PaymentProvider;
@@ -23,6 +24,7 @@ public class WalletService {
     private final WalletRepository walletRepository;
     private final UserRepository userRepository;
     private final PaymentProvider paymentProvider;
+    private final AuditLogService auditLogService;
 
     public WalletResponse getMyWallet(String email) {
         User user = getUserByEmail(email);
@@ -36,38 +38,59 @@ public class WalletService {
         Wallet wallet = getWalletByUser(user);
 
         boolean paymentSuccessful = paymentProvider.processDeposit(user.getId(), request.amount());
-
         if (!paymentSuccessful) {
             throw new RuntimeException("Payment processing failed");
         }
 
-        BigDecimal newBalance = wallet.getBalance().add(request.amount());
-        wallet.setBalance(newBalance);
+        BigDecimal previousBalance = wallet.getBalance();
+        BigDecimal newBalance = previousBalance.add(request.amount());
 
+        wallet.setBalance(newBalance);
         Wallet savedWallet = walletRepository.save(wallet);
+
+        auditLogService.logFinancialAction(
+                "EXTERNAL_DEPOSIT",
+                user.getId(),
+                wallet.getId(),
+                null,
+                previousBalance,
+                newBalance,
+                "User deposited funds via external provider"
+        );
+
         return mapToResponse(savedWallet);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void debitWallet(Long userId, BigDecimal amount) {
+    public void debitWallet(Long userId, BigDecimal amount, Long escrowId, String action, String details) {
         Wallet wallet = walletRepository.findByUserIdWithLock(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new InsufficientFundsException("Insufficient funds. Wallet balance: " + wallet.getBalance() + ", Required: " + amount);
+            throw new RuntimeException("Insufficient funds.");
         }
 
-        wallet.setBalance(wallet.getBalance().subtract(amount));
+        BigDecimal previousBalance = wallet.getBalance();
+        BigDecimal newBalance = previousBalance.subtract(amount);
+
+        wallet.setBalance(newBalance);
         walletRepository.save(wallet);
+
+        auditLogService.logFinancialAction(action, userId, wallet.getId(), escrowId, previousBalance, newBalance, details);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void creditWallet(Long userId, BigDecimal amount) {
+    public void creditWallet(Long userId, BigDecimal amount, Long escrowId, String action, String details) {
         Wallet wallet = walletRepository.findByUserIdWithLock(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
 
-        wallet.setBalance(wallet.getBalance().add(amount));
+        BigDecimal previousBalance = wallet.getBalance();
+        BigDecimal newBalance = previousBalance.add(amount);
+
+        wallet.setBalance(newBalance);
         walletRepository.save(wallet);
+
+        auditLogService.logFinancialAction(action, userId, wallet.getId(), escrowId, previousBalance, newBalance, details);
     }
 
 

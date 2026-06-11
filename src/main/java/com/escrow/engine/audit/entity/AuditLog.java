@@ -20,24 +20,25 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private String action;
 
-    @Column(nullable = false)
-    private Long perfomedById;
+    @Column(nullable = false, updatable = false)
+    private Long performedById;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private Long walletId;
 
+    @Column(updatable = false)
     private Long escrowTransactionId;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(nullable = false, precision = 15, scale = 2, updatable = false)
     private BigDecimal previousBalance;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(nullable = false, precision = 15, scale = 2, updatable = false)
     private BigDecimal newBalance;
 
-    @Column(length = 2000)
+    @Column(length = 2000, updatable = false)
     private String details;
 
     @CreationTimestamp

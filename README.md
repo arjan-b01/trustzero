@@ -74,8 +74,8 @@ Any other transition is automatically rejected.
 
 ## Tech Stack
 
-* Java 21
-* Spring Boot
+* Java 17
+* Spring Boot 
 * Spring Security
 * JWT
 * PostgreSQL

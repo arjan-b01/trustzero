@@ -68,4 +68,16 @@ public class AuditLogService {
                 log.getTimestamp()
         );
     }
+
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void logArbitrationEvent(String action, Long escrowId, Long adminId, String details) {
+        com.escrow.engine.audit.entity.AuditLog log = com.escrow.engine.audit.entity.AuditLog.builder()
+                .action(action)
+                .performedById(adminId)
+                .escrowTransactionId(escrowId)
+                .details(details)
+                // Leaving walletId and balance fields null since this isn't a direct financial movement
+                .build();
+        auditLogRepository.save(log);
+    }
 }

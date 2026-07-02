@@ -1,5 +1,6 @@
 package com.escrow.engine.escrow.service;
 
+import com.escrow.engine.dispute.repository.DisputeRecordRepository;
 import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
 import com.escrow.engine.escrow.dto.DisputeRequest;
@@ -26,6 +27,7 @@ public class EscrowService {
     private final UserRepository userRepository;
     private final EscrowStateValidator stateValidator;
     private final WalletService walletService;
+    private final DisputeRecordRepository disputeRecordRepository;
 
     @Transactional
     public EscrowResponse createEscrow(String buyerEmail, CreateEscrowRequest request) {
@@ -119,6 +121,40 @@ public class EscrowService {
     }
 
     @Transactional
+    public EscrowResponse openDispute(String userEmail, Long escrowId, com.escrow.engine.dispute.dto.DisputeRequest request) {
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
+        User requestingUser = userRepository.findByEmail(userEmail).orElseThrow();
+
+        boolean isBuyer = tx.getBuyer().getId().equals(requestingUser.getId());
+        boolean isSeller = tx.getSeller().getId().equals(requestingUser.getId());
+
+        if (!isBuyer && !isSeller) {
+            throw new RuntimeException("Unauthorized: You are not a participant in this transaction");
+        }
+
+        stateValidator.validate(tx.getStatus(), TransactionStatus.DISPUTED);
+
+        tx.setStatus(TransactionStatus.DISPUTED);
+        tx.setDisputeReason("Structured dispute opened by " + (isBuyer ? "BUYER" : "SELLER"));
+
+        // Saving the structured data for the AI to read later
+        com.escrow.engine.dispute.entity.DisputeRecord record = com.escrow.engine.dispute.entity.DisputeRecord.builder()
+                .escrow(tx)
+                .buyerClaim(request.buyerClaim())
+                .sellerResponse(request.sellerResponse())
+                .deliveryProofSubmitted(request.deliveryProofSubmitted())
+                .deadlineMet(request.deadlineMet())
+                .evidenceUrl(request.evidenceUrl())
+                .agreedDeliveryTerms(request.agreedDeliveryTerms())
+                .build();
+        disputeRecordRepository.save(record);
+
+        EscrowTransaction savedTx = escrowRepository.save(tx);
+        return mapToResponse(savedTx);
+    }
+
+    @Transactional
     public EscrowResponse resolveDispute(String adminEmail, Long escrowId, ResolveDisputeRequest request) {
         User admin = userRepository.findByEmail(adminEmail).orElseThrow();
 
@@ -169,5 +205,35 @@ public class EscrowService {
                 tx.getCreatedAt(),
                 tx.getUpdatedAt()
         );
+    }
+
+    @Transactional
+    public void resolveDisputeByAI(Long escrowId, String verdict, String reasoning) {
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
+
+        TransactionStatus targetStatus = verdict.equals("RELEASE")
+                ? TransactionStatus.RELEASED
+                : TransactionStatus.REFUNDED;
+
+        stateValidator.validate(tx.getStatus(), targetStatus);
+
+        if (verdict.equals("RELEASE")) {
+            walletService.creditWallet(
+                    tx.getSeller().getId(), tx.getAmount(), tx.getId(),
+                    "AI_DISPUTE_RELEASED",
+                    "AI Arbitration released funds to seller. Reasoning: " + reasoning
+            );
+        } else {
+            walletService.creditWallet(
+                    tx.getBuyer().getId(), tx.getAmount(), tx.getId(),
+                    "AI_DISPUTE_REFUNDED",
+                    "AI Arbitration refunded buyer. Reasoning: " + reasoning
+            );
+        }
+
+        tx.setStatus(targetStatus);
+        tx.setDisputeReason("AI-RESOLVED: " + reasoning + " | Original: " + tx.getDisputeReason());
+        escrowRepository.save(tx);
     }
 }

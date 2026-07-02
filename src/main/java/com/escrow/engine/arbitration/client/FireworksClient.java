@@ -19,7 +19,7 @@ public class FireworksClient {
     @Value("${fireworks.api.key}")
     private String apiKey;
 
-    @Value("$fireworks.api.url")
+    @Value("${fireworks.api.url}")
     private String url;
 
     @Value("${fireworks.api.model}")
@@ -66,8 +66,10 @@ public class FireworksClient {
             JsonNode rootNode = objectMapper.readTree(response.body());
             return rootNode.path("choices").get(0).path("message").path("content").asText();
 
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to execute LLM request", e);
+        }catch (Exception e) {
+            System.out.println("API URL = " + url);
+            e.printStackTrace();
+            throw new RuntimeException("Failed to execute LLM request: " + e.getMessage(), e);
         }
     }
 }

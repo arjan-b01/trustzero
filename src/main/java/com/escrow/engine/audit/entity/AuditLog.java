@@ -32,10 +32,10 @@ public class AuditLog {
     @Column(updatable = false)
     private Long escrowTransactionId;
 
-    @Column(nullable = false, precision = 15, scale = 2, updatable = false)
+    @Column(precision = 15, scale = 2, updatable = false)
     private BigDecimal previousBalance;
 
-    @Column(nullable = false, precision = 15, scale = 2, updatable = false)
+    @Column(precision = 15, scale = 2, updatable = false)
     private BigDecimal newBalance;
 
     @Column(length = 2000, updatable = false)

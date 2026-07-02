@@ -3,7 +3,7 @@ package com.escrow.engine.escrow.service;
 import com.escrow.engine.dispute.repository.DisputeRecordRepository;
 import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
-import com.escrow.engine.escrow.dto.DisputeRequest;
+import com.escrow.engine.dispute.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
 import com.escrow.engine.escrow.dto.ResolveDisputeRequest;
 import com.escrow.engine.escrow.entity.EscrowTransaction;
@@ -100,28 +100,6 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse openDispute(String userEmail, Long escrowId, DisputeRequest request) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
-                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
-        User requestingUser = userRepository.findByEmail(userEmail).orElseThrow();
-
-        boolean isBuyer = tx.getBuyer().getId().equals(requestingUser.getId());
-        boolean isSeller = tx.getSeller().getId().equals(requestingUser.getId());
-
-        if (!isBuyer && !isSeller) {
-            throw new RuntimeException("Unauthorized: You are not a participant in this transaction");
-        }
-
-        stateValidator.validate(tx.getStatus(), TransactionStatus.DISPUTED);
-
-        tx.setStatus(TransactionStatus.DISPUTED);
-        tx.setDisputeReason(request.reason());
-        EscrowTransaction savedTx = escrowRepository.save(tx);
-
-        return mapToResponse(savedTx);
-    }
-
-    @Transactional
-    public EscrowResponse openDispute(String userEmail, Long escrowId, com.escrow.engine.dispute.dto.DisputeRequest request) {
         EscrowTransaction tx = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User requestingUser = userRepository.findByEmail(userEmail).orElseThrow();

@@ -1,7 +1,7 @@
 package com.escrow.engine.escrow.controller;
 
 import com.escrow.engine.escrow.dto.CreateEscrowRequest;
-import com.escrow.engine.escrow.dto.DisputeRequest;
+import com.escrow.engine.dispute.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
 import com.escrow.engine.escrow.dto.ResolveDisputeRequest;
 import com.escrow.engine.escrow.service.EscrowService;

@@ -1,162 +1,305 @@
-# TrustZero Escrow Engine
+# TrustZero — AI-Powered Escrow Engine
 
-A secure escrow transaction platform built with Spring Boot, PostgreSQL, JWT Authentication, Role-Based Access Control, and an immutable audit ledger.
+TrustZero is a secure escrow platform that combines traditional financial transaction guarantees with AI-assisted dispute resolution.
 
-## Overview
+Instead of relying solely on manual administrators to resolve disputes, TrustZero introduces a three-agent AI arbitration pipeline that can automatically resolve straightforward disputes while escalating uncertain cases to a human administrator.
 
-TrustZero acts as a trusted intermediary between buyers and sellers.
-
-Instead of sending money directly to the seller, the buyer deposits funds into an escrow account. The funds remain locked until the transaction is completed successfully or resolved through dispute management.
-
-The system implements a strict Finite State Machine (FSM) to prevent illegal transaction state transitions and uses pessimistic database locking to ensure financial consistency during concurrent operations.
+Built using Java, Spring Boot, PostgreSQL, JWT Authentication, Finite State Machines, ACID transactions, pessimistic locking, and Fireworks AI.
 
 ---
 
-## Features
+# Features
 
-## Core Engineering Concepts Demonstrated
-| Concept               | Implementation                                      |
-|-----------------------|-----------------------------------------------------|
-| ACID Transactions     | `@Transactional` with full rollback on any failure    |
-| Concurrency Control   | `@Lock(PESSIMISTIC_WRITE)` on wallet rows             |
-| Finite State Machine  | `EscrowStateValidator` blocks all illegal transitions |
-| Immutable Audit Trail | Every balance change produces an AuditLog record    |
+## Core Engineering Concepts
 
-### Authentication & Authorization
-
-* JWT-based authentication
-* Role-based access control (BUYER, SELLER, ADMIN)
-* Secure password hashing with BCrypt
-
-### Wallet Management
-
-* Wallet creation for every user
-* Deposit functionality
-* Secure balance tracking
-* Pessimistic locking for monetary operations
-
-### Escrow Engine
-
-* Create escrow contracts
-* Fund escrow transactions
-* Release funds to sellers
-* Open disputes
-* Admin dispute resolution
-* Finite State Machine validation
-
-### Audit Ledger
-
-* Immutable financial audit logs
-* Transaction history tracking
-* Wallet activity tracking
-
-### API Documentation
-
-* Swagger / OpenAPI integration
+| Concept | Implementation |
+|----------|----------------|
+| ACID Transactions | `@Transactional` with rollback on failure |
+| Concurrency Control | `@Lock(PESSIMISTIC_WRITE)` for wallet consistency |
+| Finite State Machine | Prevents illegal escrow state transitions |
+| Immutable Audit Trail | Every financial and AI decision is recorded |
+| Platform Commission | Automatic commission deduction during funding |
+| AI Arbitration | Three-agent LLM workflow for dispute resolution |
 
 ---
 
-## Escrow State Machine
+# Authentication & Authorization
 
-CREATED → FUNDED
-
-FUNDED → RELEASED
-
-FUNDED → DISPUTED
-
-DISPUTED → RELEASED
-
-DISPUTED → REFUNDED
-
-Any other transition is automatically rejected.
+- JWT Authentication
+- BCrypt password hashing
+- Role-Based Access Control
+    - BUYER
+    - SELLER
+    - ADMIN
 
 ---
 
-## Tech Stack
+# Wallet Engine
 
-* Java 17
-* Spring Boot 
-* Spring Security
-* JWT
-* PostgreSQL
-* Spring Data JPA / Hibernate
-* Maven
-* Swagger / OpenAPI
+- Automatic wallet creation
+- Secure deposits
+- Balance management
+- Pessimistic row locking
+- Immutable financial ledger
 
 ---
 
-## API Modules
+# Escrow Engine
 
-* Authentication API
-* Wallet API
-* Escrow API
-* Audit API
-
----
-
-## Security Highlights
-
-* JWT Authentication
-* Environment-variable based secret management
-* Role-based authorization
-* Transaction management using @Transactional
-* Pessimistic locking for financial consistency
+- Create escrow contracts
+- Fund transactions
+- Automatic platform commission collection
+- Release funds
+- Open disputes
+- Manual admin resolution
+- AI-powered dispute resolution
+- Finite State Machine validation
 
 ---
 
-## Running the Project
+# AI Arbitration System
 
-### Clone Repository
+TrustZero introduces an explainable multi-agent arbitration pipeline.
 
-git clone <repository-url>
+When an escrow enters the **DISPUTED** state:
 
-### Configure Environment Variables
+```
+Buyer Claim
+        │
+        ▼
+Buyer Advocate AI
+        │
+        ▼
+Seller Advocate AI
+        │
+        ▼
+Neutral Arbitrator AI
+        │
+        ▼
+Deterministic Java Confidence Engine
+        │
+        ├──────────────► High Confidence
+        │                  │
+        │                  ▼
+        │          Auto Resolve Escrow
+        │
+        ▼
+Low Confidence
+        │
+        ▼
+Escalate to Admin
+```
 
-JWT_SECRET=<your-base64-secret>
+### Buyer Advocate
 
-DB_PASSWORD=<your-password>
+Generates arguments supporting a refund.
 
-### Run Application
+### Seller Advocate
 
+Generates arguments supporting releasing funds.
+
+### Neutral Arbitrator
+
+Evaluates both arguments together with dispute details and produces:
+
+- verdict
+- reasoning
+- structured JSON response
+
+### Confidence Engine
+
+Instead of trusting the LLM's confidence directly, TrustZero calculates a deterministic confidence score in Java based on predefined business rules before deciding whether to auto-execute or escalate.
+
+---
+
+# Platform Commission
+
+Every funded escrow automatically deducts a configurable platform commission.
+
+```
+Buyer
+  │
+  ▼
+₹1000
+  │
+  ├────────► Platform Wallet (3%)
+  │
+  ▼
+₹970 Locked in Escrow
+```
+
+The original contract amount is preserved while the escrow stores the actual locked amount for future release or refund.
+
+---
+
+# Live AI Arbitration Visualizer
+
+TrustZero includes a live frontend visualizer demonstrating the AI arbitration process.
+
+The visualizer displays:
+
+- Buyer Advocate argument
+- Seller Advocate argument
+- Arbitrator reasoning
+- Confidence score
+- Final verdict
+- Escrow state transition
+- Audit log update
+
+making the entire decision process transparent and explainable.
+
+---
+
+# Escrow State Machine
+
+```
+CREATED
+    │
+    ▼
+FUNDED
+   ├────────────► RELEASED
+   │
+   ▼
+DISPUTED
+   ├────────────► RELEASED
+   │
+   └────────────► REFUNDED
+```
+
+Illegal transitions are rejected automatically.
+
+---
+
+# Audit System
+
+Every important system event is permanently recorded.
+
+Examples include:
+
+- Deposits
+- Escrow funding
+- Platform commission
+- Fund releases
+- Refunds
+- AI decisions
+- Admin overrides
+
+---
+
+# Tech Stack
+
+- Java 17
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- Hibernate
+- PostgreSQL
+- JWT
+- Maven
+- Swagger / OpenAPI
+- Fireworks AI API
+
+---
+
+# API Modules
+
+- Authentication API
+- Wallet API
+- Escrow API
+- Dispute API
+- AI Arbitration API
+- Audit API
+
+---
+
+# Security Highlights
+
+- JWT Authentication
+- BCrypt password hashing
+- Environment variable secret management
+- Stateless authentication
+- Role-based authorization
+- ACID transactions
+- Pessimistic database locking
+
+---
+
+# Running the Project
+
+## Clone Repository
+
+```bash
+git clone https://github.com/arjan-b01/trustzero.git
+```
+
+## Configure Environment Variables
+
+```text
+JWT_SECRET=...
+
+DB_URL=...
+
+DB_USERNAME=...
+
+DB_PASSWORD=...
+
+FIREWORKS_API_KEY=...
+```
+
+## Run
+
+```bash
 mvn clean install
 
 mvn spring-boot:run
+```
 
-### Swagger UI
+## Swagger
 
+```
 http://localhost:8080/swagger-ui/index.html
+```
 
 ---
 
-## Future Improvements
+# Architecture Overview
 
-* Payment Gateway Integration
-* Automated Escrow Expiry
-* Email Notifications
-* Docker Deployment
-* CI/CD Pipeline
-* Advanced Monitoring & Metrics
-
-## Architecture Overview
-
-```text
-┌──────────────┐         ┌──────────────────────────────────────┐
-│   REST Client │──JWT──▶ │           API Gateway Layer           │
-└──────────────┘         │  (Spring Security + Role Enforcement) │
-                         └──────────────┬───────────────────────┘
-                                        │
-              ┌─────────────────────────┼──────────────────────┐
-              ▼                         ▼                      ▼
-     ┌────────────────┐     ┌─────────────────────┐  ┌──────────────────┐
-     │  WalletService  │     │   EscrowService      │  │  AuditLogService │
-     │  (PESSIMISTIC_  │     │  (Finite State       │  │  (Immutable      │
-     │   WRITE Lock)   │     │   Machine Enforcer)  │  │   Event Log)     │
-     └────────┬───────┘     └──────────┬──────────┘  └────────┬─────────┘
-              └─────────────────────────┼─────────────────────┘
-                                        ▼
-                              ┌─────────────────┐
-                              │   PostgreSQL DB   │
-                              │  (ACID, Row-Level │
-                              │     Locking)      │
-                              └─────────────────┘
 ```
+                    JWT Authentication
+                           │
+                           ▼
+                  Spring Security Layer
+                           │
+         ┌─────────────────┼─────────────────┐
+         ▼                 ▼                 ▼
+   Wallet Service     Escrow Service    Audit Service
+         │                 │
+         │                 ▼
+         │         Dispute Service
+         │                 │
+         │                 ▼
+         │        AI Arbitration Engine
+         │                 │
+         │      ┌──────────┼──────────┐
+         │      ▼          ▼          ▼
+         │ Buyer AI   Seller AI   Arbitrator AI
+         │                 │
+         └─────────────────┼─────────────────┘
+                           ▼
+                     PostgreSQL
+```
+
+---
+
+# Future Roadmap
+
+- Vision-based evidence analysis
+- PDF contract understanding
+- OCR for receipts and invoices
+- AI-assisted evidence validation
+- Multi-party evidence submission
+- Payment gateway integration
+- Email notifications
+- Docker & Kubernetes deployment
+- CI/CD pipeline
+- Monitoring & Observability

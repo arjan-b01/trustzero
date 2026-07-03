@@ -23,4 +23,7 @@ fireworks:
   api:
     url: https://api.fireworks.ai/inference/v1/chat/completions
     key: ${FIREWORKS_API_KEY:fw_K23zoU8pfGyNohySmJATTo}
-    model: accounts/fireworks/models/minimax-m2p7
+    model: accounts/fireworks/models/glm-5p2
+
+platform:
+  commission-rate: 0.03

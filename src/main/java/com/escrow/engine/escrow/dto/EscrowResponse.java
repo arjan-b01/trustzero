@@ -8,6 +8,9 @@ public record EscrowResponse(
         String title,
         String description,
         BigDecimal amount,
+        BigDecimal platformFee,
+        BigDecimal lockedAmount,
+        BigDecimal commissionRate,
         String status,
         Long buyerId,
         String buyerName,
@@ -16,5 +19,4 @@ public record EscrowResponse(
         String disputeReason,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
-}
+) {}

@@ -16,12 +16,16 @@ import com.escrow.engine.user.enums.UserRole;
 import com.escrow.engine.user.repository.UserRepository;
 import com.escrow.engine.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class EscrowService {
+
+    @Value("${platform.commission-rate:0.03}")
+    private java.math.BigDecimal configuredCommissionRate;
 
     private final EscrowRepository escrowRepository;
     private final UserRepository userRepository;
@@ -59,7 +63,6 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse fundEscrow(String buyerEmail, Long escrowId) {
-
         EscrowTransaction tx = escrowRepository.findById(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User buyer = userRepository.findByEmail(buyerEmail).orElseThrow();
@@ -70,11 +73,29 @@ public class EscrowService {
 
         stateValidator.validate(tx.getStatus(), TransactionStatus.FUNDED);
 
-        walletService.debitWallet(buyer.getId(), tx.getAmount(), tx.getId(), "ESCROW_FUNDED", "Buyer locked funds into escrow contract");
+        // --- Commission Math ---
+        java.math.BigDecimal originalAmount = tx.getAmount();
+        java.math.BigDecimal fee = originalAmount.multiply(configuredCommissionRate).setScale(2, java.math.RoundingMode.HALF_UP);
+        java.math.BigDecimal lockedAmount = originalAmount.subtract(fee).setScale(2, java.math.RoundingMode.HALF_UP);
 
+        // 1. Debit the full 100% from the buyer
+        walletService.debitWallet(buyer.getId(), originalAmount, tx.getId(),
+                "ESCROW_FUNDED", "Buyer locked funds (includes platform fee)");
+
+        // 2. Find the Admin and credit the fee instantly
+        User admin = userRepository.findFirstByRole(UserRole.ADMIN)
+                .orElseThrow(() -> new RuntimeException("System Error: Admin account not found for commission"));
+
+        walletService.creditWallet(admin.getId(), fee, tx.getId(),
+                "ADMIN_COMMISSION", "Platform collected fee on escrow funding");
+
+        // 3. Save the historical snapshot on the transaction
+        tx.setPlatformFee(fee);
+        tx.setLockedAmount(lockedAmount);
+        tx.setCommissionRate(configuredCommissionRate);
         tx.setStatus(TransactionStatus.FUNDED);
-        EscrowTransaction savedTx = escrowRepository.save(tx);
 
+        EscrowTransaction savedTx = escrowRepository.save(tx);
         return mapToResponse(savedTx);
     }
 
@@ -90,7 +111,7 @@ public class EscrowService {
 
         stateValidator.validate(tx.getStatus(), TransactionStatus.RELEASED);
 
-        walletService.creditWallet(tx.getSeller().getId(), tx.getAmount(), tx.getId(), "ESCROW_RELEASED", "Funds released to seller by buyer");
+        walletService.creditWallet(tx.getSeller().getId(), tx.getLockedAmount(), tx.getId(), "ESCROW_RELEASED", "Funds released to seller by buyer");
 
         tx.setStatus(TransactionStatus.RELEASED);
         EscrowTransaction savedTx = escrowRepository.save(tx);
@@ -150,9 +171,9 @@ public class EscrowService {
         stateValidator.validate(tx.getStatus(), targetStatus);
 
         if (request.resolution() == DisputeResolution.RELEASE_TO_SELLER) {
-            walletService.creditWallet(tx.getSeller().getId(), tx.getAmount(), tx.getId(), "DISPUTE_RELEASED", "Admin released funds to seller. Notes: " + request.adminNotes());
+            walletService.creditWallet(tx.getSeller().getId(), tx.getLockedAmount(), tx.getId(), "DISPUTE_RELEASED", "Admin released funds to seller. Notes: " + request.adminNotes());
         } else if (request.resolution() == DisputeResolution.REFUND_TO_BUYER) {
-            walletService.creditWallet(tx.getBuyer().getId(), tx.getAmount(), tx.getId(), "DISPUTE_REFUNDED", "Admin refunded buyer. Notes: " + request.adminNotes());
+            walletService.creditWallet(tx.getBuyer().getId(), tx.getLockedAmount(), tx.getId(), "DISPUTE_REFUNDED", "Admin refunded buyer. Notes: " + request.adminNotes());
         }
 
         tx.setStatus(targetStatus);
@@ -174,6 +195,9 @@ public class EscrowService {
                 tx.getTitle(),
                 tx.getDescription(),
                 tx.getAmount(),
+                tx.getPlatformFee(),
+                tx.getLockedAmount(),
+                tx.getCommissionRate(),
                 tx.getStatus().name(),
                 tx.getBuyer().getId(),
                 tx.getBuyer().getName(),
@@ -198,13 +222,13 @@ public class EscrowService {
 
         if (verdict.equals("RELEASE")) {
             walletService.creditWallet(
-                    tx.getSeller().getId(), tx.getAmount(), tx.getId(),
+                    tx.getSeller().getId(), tx.getLockedAmount(), tx.getId(),
                     "AI_DISPUTE_RELEASED",
                     "AI Arbitration released funds to seller. Reasoning: " + reasoning
             );
         } else {
             walletService.creditWallet(
-                    tx.getBuyer().getId(), tx.getAmount(), tx.getId(),
+                    tx.getBuyer().getId(), tx.getLockedAmount(), tx.getId(),
                     "AI_DISPUTE_REFUNDED",
                     "AI Arbitration refunded buyer. Reasoning: " + reasoning
             );

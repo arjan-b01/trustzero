@@ -32,6 +32,15 @@ public class EscrowTransaction {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
+    @Column(precision = 15, scale = 2)
+    private BigDecimal platformFee;
+
+    @Column(precision = 15, scale = 2)
+    private BigDecimal lockedAmount;
+
+    @Column(precision = 5, scale = 4) // Store rates like 0.0300
+    private BigDecimal commissionRate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_id", nullable = false)
     private User buyer;

@@ -25,7 +25,7 @@ public class DisputeRecord {
     private EscrowTransaction escrow;
 
     // --- User Provided Evidence ---
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String buyerClaim;
 
     @Column(length = 1000)
@@ -42,13 +42,13 @@ public class DisputeRecord {
     private String agreedDeliveryTerms;
 
     // --- AI Generated Arbitration Data ---
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String aiBuyerArgument;
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String aiSellerArgument;
 
-    @Column(length = 2000)
+    @Column(columnDefinition = "TEXT")
     private String aiReasoning;
 
     private Double aiConfidenceScore;

@@ -83,25 +83,41 @@ public class DisputeArbitrationService {
         String verdict = "REFUND";
         String reasoning;
         double confidenceScore = 0.45;
-        boolean evidenceSubmitted = false, agentsAgree = false;
+        boolean aiEvidenceSubmitted = false, agentsAgree = false;
         String clearerParty = "NEITHER";
 
         try {
             String cleanJson = arbitratorRaw.replaceAll("```json", "").replaceAll("```", "").trim();
             JsonNode json = objectMapper.readTree(cleanJson);
             verdict = json.path("verdict").asText("REFUND");
-            evidenceSubmitted = json.path("evidenceSubmitted").asBoolean(false);
+            aiEvidenceSubmitted = json.path("evidenceSubmitted").asBoolean(false);
             agentsAgree = json.path("agentsAgree").asBoolean(false);
             clearerParty = json.path("clearerParty").asText("NEITHER");
             reasoning = json.path("reasoning").asText();
 
-            // Deterministic logic
-            if (evidenceSubmitted && agentsAgree) confidenceScore = 0.90;
-            else if (evidenceSubmitted) confidenceScore = 0.65;
-            else if (agentsAgree) confidenceScore = 0.70;
+            // --- CLAUDE's DETERMINISTIC DB-BACKED MATH ---
+
+            // True Database Facts
+            boolean hardEvidence = record.isDeliveryProofSubmitted();
+            // boolean deadlineMet = record.isDeadlineMet(); // (Available if you want to make it even stricter later)
+
+            // AI Sentiment
+            boolean hasClearWinner = !clearerParty.equals("NEITHER");
+
+            // Calculation
+            if (hardEvidence && hasClearWinner) {
+                confidenceScore = 0.90; // High Confidence: DB Proof + AI Winner -> Auto-Executes
+            } else if (!hardEvidence && hasClearWinner) {
+                confidenceScore = 0.70; // AI is confident, but NO DB proof -> Escalates to Admin (Max 0.70)
+            } else if (hardEvidence && !hasClearWinner) {
+                confidenceScore = 0.65; // DB Proof exists, but AI is confused -> Escalates to Admin
+            } else {
+                confidenceScore = 0.45; // No proof, no clear winner -> Escalates to Admin
+            }
 
         } catch (Exception e) {
             reasoning = "Failed to parse AI output. Manual review required. Raw: " + arbitratorRaw;
+            confidenceScore = 0.45;
         }
 
         // 4. Save AI Thoughts
@@ -129,7 +145,7 @@ public class DisputeArbitrationService {
 
         disputeRecordRepository.save(record);
 
-        return new ArbitrationResult(verdict, confidenceScore, evidenceSubmitted, agentsAgree, clearerParty, buyerArgument, sellerArgument, reasoning, autoExecuted);
+        return new ArbitrationResult(verdict, confidenceScore, aiEvidenceSubmitted, agentsAgree, clearerParty, buyerArgument, sellerArgument, reasoning, autoExecuted);
     }
 
     private String buildContext(EscrowTransaction tx, DisputeRecord record) {

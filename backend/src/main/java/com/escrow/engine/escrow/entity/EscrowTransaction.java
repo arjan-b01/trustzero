@@ -53,7 +53,7 @@ public class EscrowTransaction {
     @Column(nullable = false)
     private TransactionStatus status;
 
-    @Column(length = 1000)
+    @Column(columnDefinition = "TEXT")
     private String disputeReason;
 
     @CreationTimestamp

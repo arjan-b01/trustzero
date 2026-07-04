@@ -17,7 +17,7 @@ export const Profile = () => {
 
   const handleClearCache = () => {
     if (currentUser?.email) {
-      localStorage.removeItem(`tz_escrows_${currentUser.email}`);
+      localStorage.removeItem('tz_global_escrows');
       toast.success('Escrow local storage cache cleared! Refreshed default seeds.');
       setTimeout(() => window.location.reload(), 800);
     }

@@ -80,8 +80,8 @@ const escrowService = {
   },
 
   // Get all escrows for active user (hybrid from local storage)
-  getEscrowList(userEmail) {
-    return getLocalEscrows(userEmail);
+  getEscrowList() {
+    return getLocalEscrows();
   }
 };
 

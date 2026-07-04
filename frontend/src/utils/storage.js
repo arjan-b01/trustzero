@@ -54,41 +54,62 @@ const MOCK_ESCROWS = [
   }
 ];
 
-export const getLocalEscrows = (userEmail) => {
-  if (!userEmail) return [];
-  const key = `tz_escrows_${userEmail}`;
+export const getLocalEscrows = () => {
+  const key = 'tz_global_escrows';
   const data = localStorage.getItem(key);
+  let allEscrows = [];
   if (!data) {
-    // Seed default mock escrows
     localStorage.setItem(key, JSON.stringify(MOCK_ESCROWS));
-    return MOCK_ESCROWS;
+    allEscrows = MOCK_ESCROWS;
+  } else {
+    allEscrows = JSON.parse(data);
   }
-  return JSON.parse(data);
+
+  const userStr = localStorage.getItem('tz_user');
+  if (!userStr) return [];
+  const user = JSON.parse(userStr);
+
+  if (user.role === 'ADMIN') {
+    return allEscrows;
+  }
+
+  return allEscrows.filter(
+    (escrow) =>
+      escrow.buyerName === user.name ||
+      escrow.sellerName === user.name ||
+      escrow.buyerId === user.userId ||
+      escrow.sellerId === user.userId
+  );
 };
 
 export const saveLocalEscrow = (userEmail, escrow) => {
-  if (!userEmail || !escrow) return;
-  const key = `tz_escrows_${userEmail}`;
-  const escrows = getLocalEscrows(userEmail);
-  // Prevent duplicate additions
-  if (!escrows.some(e => e.id === escrow.id)) {
-    escrows.unshift(escrow);
-    localStorage.setItem(key, JSON.stringify(escrows));
+  if (!escrow) return;
+  const key = 'tz_global_escrows';
+  
+  const data = localStorage.getItem(key);
+  const allEscrows = data ? JSON.parse(data) : [...MOCK_ESCROWS];
+  
+  if (!allEscrows.some(e => e.id === escrow.id)) {
+    allEscrows.unshift(escrow);
+    localStorage.setItem(key, JSON.stringify(allEscrows));
   }
 };
 
 export const updateLocalEscrowStatus = (userEmail, escrowId, newStatus, additionalFields = {}) => {
-  if (!userEmail || !escrowId) return;
-  const key = `tz_escrows_${userEmail}`;
-  const escrows = getLocalEscrows(userEmail);
-  const index = escrows.findIndex(e => e.id === Number(escrowId));
+  if (!escrowId) return;
+  const key = 'tz_global_escrows';
+  
+  const data = localStorage.getItem(key);
+  const allEscrows = data ? JSON.parse(data) : [...MOCK_ESCROWS];
+  
+  const index = allEscrows.findIndex(e => e.id === Number(escrowId));
   if (index !== -1) {
-    escrows[index] = {
-      ...escrows[index],
+    allEscrows[index] = {
+      ...allEscrows[index],
       status: newStatus,
       updatedAt: new Date().toISOString(),
       ...additionalFields
     };
-    localStorage.setItem(key, JSON.stringify(escrows));
+    localStorage.setItem(key, JSON.stringify(allEscrows));
   }
 };

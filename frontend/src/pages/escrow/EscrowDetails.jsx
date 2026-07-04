@@ -384,7 +384,7 @@ export const EscrowDetails = () => {
                 Submit this dispute claim to freeze the contract. Our three-agent AI arbitration pipeline will automatically review statements and delivery logs.
               </p>
 
-              <form onSubmit={handleSubmit(onSubmitDispute = (data) => disputeMutation.mutate(data))} className="space-y-4 text-sm text-text-secondary">
+              <form onSubmit={handleSubmit((data) => disputeMutation.mutate(data))} className="space-y-4 text-sm text-text-secondary">
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Buyer Claim / Issue Statement</label>
                   <textarea
@@ -474,7 +474,7 @@ export const EscrowDetails = () => {
                 <span>Manual Admin Resolution Override</span>
               </h3>
 
-              <form onSubmit={handleSubmitResolve(onSubmitResolve = (data) => resolveMutation.mutate(data))} className="space-y-4 text-sm text-text-secondary">
+              <form onSubmit={handleSubmitResolve((data) => resolveMutation.mutate(data))} className="space-y-4 text-sm text-text-secondary">
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Resolution Outcome</label>
                   <select
@@ -520,9 +520,5 @@ export const EscrowDetails = () => {
     </div>
   );
 };
-
-// Modals onSubmit bindings helpers
-let onSubmitDispute;
-let onSubmitResolve;
 
 export default EscrowDetails;

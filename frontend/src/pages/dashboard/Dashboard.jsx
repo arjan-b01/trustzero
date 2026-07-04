@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Activity,
   User,
-  PlusCircle
+  PlusCircle,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';

@@ -5,8 +5,10 @@ import com.escrow.engine.dispute.dto.DisputeRequest;
 import com.escrow.engine.escrow.dto.EscrowResponse;
 import com.escrow.engine.escrow.dto.ResolveDisputeRequest;
 import com.escrow.engine.escrow.service.EscrowService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,5 +63,17 @@ public class EscrowController {
             @Valid @RequestBody ResolveDisputeRequest request,
             Principal principal) {
         return ResponseEntity.ok(escrowService.resolveDispute(principal.getName(), id, request));
+    }
+
+    @PostMapping("/{id}/dispute/seller-response")
+    @Operation(summary = "Submit Seller Defense", description = "Allows the seller to upload their counter-claim and evidence URL.")
+    public ResponseEntity<EscrowResponse> submitSellerResponse(
+            @PathVariable Long id,
+            @Valid @RequestBody com.escrow.engine.dispute.dto.SellerResponseRequest request,
+            java.security.Principal principal) { // Changed this line
+
+        // Use principal.getName() which safely extracts the email from your JWT subject
+        EscrowResponse response = escrowService.submitSellerResponse(principal.getName(), id, request);
+        return ResponseEntity.ok(response);
     }
 }

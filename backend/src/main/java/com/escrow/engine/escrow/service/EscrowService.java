@@ -125,27 +125,23 @@ public class EscrowService {
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User requestingUser = userRepository.findByEmail(userEmail).orElseThrow();
 
-        boolean isBuyer = tx.getBuyer().getId().equals(requestingUser.getId());
-        boolean isSeller = tx.getSeller().getId().equals(requestingUser.getId());
-
-        if (!isBuyer && !isSeller) {
-            throw new RuntimeException("Unauthorized: You are not a participant in this transaction");
+        // Enforce that the Buyer initiates the dispute. The Seller will respond via the new endpoint.
+        if (!tx.getBuyer().getId().equals(requestingUser.getId())) {
+            throw new RuntimeException("Unauthorized: Only the buyer can initiate the dispute. Sellers must use the response endpoint.");
         }
 
         stateValidator.validate(tx.getStatus(), TransactionStatus.DISPUTED);
 
         tx.setStatus(TransactionStatus.DISPUTED);
-        tx.setDisputeReason("Structured dispute opened by " + (isBuyer ? "BUYER" : "SELLER"));
+        tx.setDisputeReason("Structured dispute opened by BUYER");
 
-        // Saving the structured data for the AI to read later
+        // Save the structured data (No more weak booleans, just raw claims and URLs for Agent 0)
         com.escrow.engine.dispute.entity.DisputeRecord record = com.escrow.engine.dispute.entity.DisputeRecord.builder()
                 .escrow(tx)
                 .buyerClaim(request.buyerClaim())
-                .sellerResponse(request.sellerResponse())
-                .deliveryProofSubmitted(request.deliveryProofSubmitted())
-                .deadlineMet(request.deadlineMet())
-                .evidenceUrl(request.evidenceUrl())
                 .agreedDeliveryTerms(request.agreedDeliveryTerms())
+                .buyerEvidenceUrl(request.buyerEvidenceUrl())
+                // sellerResponse and sellerEvidenceUrl remain null until the seller responds
                 .build();
         disputeRecordRepository.save(record);
 
@@ -237,5 +233,34 @@ public class EscrowService {
         tx.setStatus(targetStatus);
         tx.setDisputeReason("AI-RESOLVED: " + reasoning + " | Original: " + tx.getDisputeReason());
         escrowRepository.save(tx);
+    }
+
+    @Transactional
+    public EscrowResponse submitSellerResponse(String sellerEmail, Long escrowId, com.escrow.engine.dispute.dto.SellerResponseRequest request) {
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
+
+        User seller = userRepository.findByEmail(sellerEmail).orElseThrow();
+
+        // Security check: Only the actual seller can respond
+        if (!tx.getSeller().getId().equals(seller.getId())) {
+            throw new RuntimeException("Unauthorized: Only the seller can submit a dispute response.");
+        }
+
+        // FSM Check: Ensure the escrow is actually disputed
+        if (tx.getStatus() != TransactionStatus.DISPUTED) {
+            throw new RuntimeException("Invalid State: Escrow must be in DISPUTED state to submit a response.");
+        }
+
+        // Find the active dispute case file
+        com.escrow.engine.dispute.entity.DisputeRecord record = disputeRecordRepository.findByEscrowId(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Active dispute record not found for this escrow."));
+
+        // Save the seller's defense for the AI to read
+        record.setSellerResponse(request.sellerResponse());
+        record.setSellerEvidenceUrl(request.sellerEvidenceUrl());
+        disputeRecordRepository.save(record);
+
+        return mapToResponse(tx);
     }
 }

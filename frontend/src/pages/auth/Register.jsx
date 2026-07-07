@@ -28,9 +28,10 @@ export const Register = () => {
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      await signup(data.name, data.email, data.password, data.role);
+      const registeredUser = await signup(data.name, data.email, data.password, data.role);
       toast.success('Account created successfully!');
-      navigate('/dashboard');
+      const defaultPath = registeredUser?.role === 'ADMIN' ? '/dashboard' : '/escrows';
+      navigate(defaultPath);
     } catch (error) {
       console.error(error);
       const errorMsg = error.response?.data?.message || 'Error occurred during registration.';

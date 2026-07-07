@@ -24,14 +24,14 @@ export const Login = () => {
     },
   });
 
-  const from = location.state?.from?.pathname || '/dashboard';
-
   const onSubmit = async (data) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      const loggedInUser = await login(data.email, data.password);
       toast.success('Logged in successfully!');
-      navigate(from, { replace: true });
+      const defaultPath = loggedInUser?.role === 'ADMIN' ? '/dashboard' : '/escrows';
+      const redirectPath = location.state?.from?.pathname || defaultPath;
+      navigate(redirectPath, { replace: true });
     } catch (error) {
       console.error(error);
       const errorMsg = error.response?.data?.message || 'Invalid email or password.';

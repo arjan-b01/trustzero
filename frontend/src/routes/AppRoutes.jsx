@@ -20,29 +20,30 @@ import Profile from '../pages/profile/Profile';
 import NotFound from '../pages/NotFound';
 
 export const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, currentUser } = useAuth();
+  const defaultRedirect = currentUser?.role === 'ADMIN' ? '/dashboard' : '/escrows';
 
   return (
     <Routes>
       {/* Public Pages */}
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Landing />}
+        element={isAuthenticated ? <Navigate to={defaultRedirect} replace /> : <Landing />}
       />
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />}
+        element={isAuthenticated ? <Navigate to={defaultRedirect} replace /> : <Login />}
       />
       <Route
         path="/register"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />}
+        element={isAuthenticated ? <Navigate to={defaultRedirect} replace /> : <Register />}
       />
 
       {/* Protected Dashboard Layout Pages */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ADMIN']}>
             <DashboardLayout>
               <Dashboard />
             </DashboardLayout>

@@ -14,11 +14,11 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
 export const Sidebar = () => {
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    ...(currentUser?.role === 'ADMIN' ? [{ name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }] : []),
     { name: 'Wallet', path: '/wallet', icon: Wallet },
     { name: 'Escrows', path: '/escrows', icon: Scroll },
     { name: 'Disputes', path: '/disputes', icon: AlertOctagon },

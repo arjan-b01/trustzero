@@ -26,7 +26,7 @@ public class AuditLog {
     @Column(nullable = false, updatable = false)
     private Long performedById;
 
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private Long walletId;
 
     @Column(updatable = false)

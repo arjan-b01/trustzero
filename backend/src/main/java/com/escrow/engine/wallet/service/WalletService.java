@@ -32,33 +32,35 @@ public class WalletService {
         return mapToResponse(wallet);
     }
 
-    @Transactional
     public WalletResponse deposit(String email, DepositRequest request) {
         User user = getUserByEmail(email);
-        Wallet wallet = getWalletByUser(user);
+        BigDecimal amount = request.amount().setScale(2, java.math.RoundingMode.HALF_UP);
 
-        boolean paymentSuccessful = paymentProvider.processDeposit(user.getId(), request.amount());
-        if (!paymentSuccessful) {
+        // 1. Charge external provider FIRST — no DB lock held.
+        if (!paymentProvider.processDeposit(user.getId(), amount)) {
             throw new RuntimeException("Payment processing failed");
         }
 
-        BigDecimal previousBalance = wallet.getBalance();
-        BigDecimal newBalance = previousBalance.add(request.amount());
+        // 2. Apply credit in a short locked transaction.
+        return applyDeposit(user, amount);
+    }
 
+    @Transactional
+    protected WalletResponse applyDeposit(User user, BigDecimal amount) {
+        Wallet wallet = walletRepository.findByUserIdWithLock(user.getId())  // <-- LOCK
+                .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
+
+        BigDecimal previousBalance = wallet.getBalance();
+        BigDecimal newBalance = previousBalance.add(amount).setScale(2, java.math.RoundingMode.HALF_UP);
         wallet.setBalance(newBalance);
-        Wallet savedWallet = walletRepository.save(wallet);
+        Wallet saved = walletRepository.save(wallet);
 
         auditLogService.logFinancialAction(
-                "EXTERNAL_DEPOSIT",
-                user.getId(),
-                wallet.getId(),
-                null,
-                previousBalance,
-                newBalance,
-                "User deposited funds via external provider"
-        );
+                "EXTERNAL_DEPOSIT", user.getId(), wallet.getId(), null,
+                previousBalance, newBalance,
+                "User deposited funds via external provider");
 
-        return mapToResponse(savedWallet);
+        return mapToResponse(saved);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

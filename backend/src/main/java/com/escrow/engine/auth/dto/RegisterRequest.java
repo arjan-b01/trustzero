@@ -15,8 +15,5 @@ public record RegisterRequest (
     String email,
 
     @NotBlank(message = "Password cannot be empty")
-    @Size(min = 6, message = "Password must be at least 6 characters") String password,
-
-    @NotNull(message = "Role is required (BUYER, SELLER or ADMIN")
-    UserRole role
+    @Size(min = 6, message = "Password must be at least 6 characters") String password
 ){}

@@ -6,6 +6,7 @@ import com.escrow.engine.auth.dto.RegisterRequest;
 import com.escrow.engine.common.exception.ResourceNotFoundException;
 import com.escrow.engine.security.JwtUtil;
 import com.escrow.engine.user.entity.User;
+import com.escrow.engine.user.enums.UserRole;
 import com.escrow.engine.user.repository.UserRepository;
 import com.escrow.engine.wallet.entity.Wallet;
 import com.escrow.engine.wallet.repository.WalletRepository;
@@ -40,7 +41,7 @@ public class AuthService {
                 .name(request.name())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role(request.role())
+                .role((UserRole.BUYER))
                 .build();
         User savedUser = userRepository.save(user);
 

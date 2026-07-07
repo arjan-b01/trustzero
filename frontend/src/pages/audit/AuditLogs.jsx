@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import walletService from '../../services/wallet.service';
 import escrowService from '../../services/escrow.service';
 import auditService from '../../services/audit.service';
-import { History, Search, Filter, ShieldAlert, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { History, Search, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const AuditLogs = () => {
@@ -34,7 +34,6 @@ export const AuditLogs = () => {
   const escrows = escrowService.getEscrowList(userEmail);
 
   // 4. Fetch Escrow audit logs in parallel using custom query logic
-  // We can fetch audit history for each escrow contract and combine them
   const { data: combinedLogs, isLoading: isEscrowLogsLoading } = useQuery({
     queryKey: ['combined-audit-logs', escrows.map(e => e.id).join(',')],
     queryFn: async () => {
@@ -80,24 +79,24 @@ export const AuditLogs = () => {
       {/* Header Info */}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-text-primary flex items-center space-x-2">
-          <History className="h-8 w-8 text-brand-primary" />
+          <History className="h-8 w-8 text-[#8B5CF6]" />
           <span>Immutable Audit Logs</span>
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <p className="mt-1.5 text-sm text-text-secondary">
           Browse permanent, unalterable system events, transaction logs, and AI decisions.
         </p>
       </div>
 
       {/* Filter panel */}
-      <div className="rounded-2xl glass-panel p-4 flex flex-col gap-4 md:flex-row md:items-center justify-between">
+      <div className="glass-panel p-4 flex flex-col gap-4 md:flex-row md:items-center justify-between shadow-xs bg-white/40 border-white/60">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
             <Search className="h-5 w-5 text-text-muted" />
           </div>
           <input
             type="text"
-            className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 py-2.5 pl-10 pr-3 text-sm text-text-primary placeholder-text-muted focus:border-brand-primary focus:outline-hidden"
+            className="block w-full glass-input py-2.5 pl-11 pr-3 transition-all border-white/80"
             placeholder="Search details or actions..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -108,7 +107,7 @@ export const AuditLogs = () => {
         <div className="flex items-center space-x-2">
           <Filter className="h-4 w-4 text-text-muted" />
           <select
-            className="rounded-lg border border-border-dark bg-bg-dark/50 px-3 py-2 text-xs text-text-secondary focus:border-brand-primary focus:outline-hidden cursor-pointer"
+            className="glass-input px-3.5 py-2 text-xs font-semibold border-white/80 cursor-pointer"
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
           >
@@ -128,17 +127,17 @@ export const AuditLogs = () => {
       {/* Logs Timeline */}
       {isLoading ? (
         <div className="flex h-[30vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-brand-primary border-t-transparent"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#8B5CF6] border-t-transparent"></div>
         </div>
       ) : filteredLogs.length === 0 ? (
-        <div className="rounded-2xl glass-panel p-16 flex flex-col items-center justify-center text-center text-text-muted">
-          <History className="h-16 w-16 text-text-muted/30 mb-4" />
+        <div className="glass-panel p-20 flex flex-col items-center justify-center text-center text-text-muted bg-white/40 shadow-xs">
+          <History className="h-16 w-16 text-text-muted/20 mb-4" />
           <h3 className="text-lg font-bold text-text-primary mb-1">No Log Entries</h3>
-          <p className="text-sm max-w-sm">No transaction audit reports exist matching your search parameters.</p>
+          <p className="text-sm max-w-sm leading-relaxed">No transaction audit reports exist matching your search parameters.</p>
         </div>
       ) : (
-        <div className="rounded-2xl glass-panel p-6 shadow-sm">
-          <div className="relative border-l-2 border-border-dark pl-6 space-y-8">
+        <div className="glass-panel p-8 shadow-sm bg-white/40 border-white/60">
+          <div className="relative border-l-2 border-white/80 pl-6 space-y-8">
             {filteredLogs.map((log, i) => {
               const isCredit = log.newBalance !== undefined && Number(log.newBalance) > Number(log.previousBalance);
               const isAI = log.action.startsWith('AI-');
@@ -147,14 +146,14 @@ export const AuditLogs = () => {
                   key={log.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={{ duration: 0.4, delay: i * 0.02, ease: [0.16, 1, 0.3, 1] }}
                   className="relative group"
                 >
                   {/* Timeline icon node */}
-                  <span className={`absolute -left-[35px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border transition-all ${
-                    isAI ? 'bg-brand-accent/20 border-brand-accent text-brand-accent' :
-                    isCredit ? 'bg-success/20 border-success text-success' :
-                    'bg-brand-primary/20 border-brand-primary text-brand-primary'
+                  <span className={`absolute -left-[35px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full border transition-all shadow-2xs ${
+                    isAI ? 'bg-[#FF7EB6]/20 border-[#FF7EB6] text-[#FF7EB6]' :
+                    isCredit ? 'bg-[#10B981]/20 border-[#10B981] text-[#10B981]' :
+                    'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#8B5CF6]'
                   }`}>
                     <span className="h-1.5 w-1.5 rounded-full bg-current"></span>
                   </span>
@@ -164,28 +163,28 @@ export const AuditLogs = () => {
                     <span className="text-sm font-bold text-text-primary uppercase tracking-wide">
                       {log.action}
                     </span>
-                    <span className="text-xs text-text-muted">
+                    <span className="text-xs font-semibold text-text-muted">
                       {new Date(log.timestamp).toLocaleString()}
                     </span>
                   </div>
 
                   {/* Body description */}
-                  <p className="text-xs text-text-secondary mt-1.5 max-w-4xl leading-relaxed">
+                  <p className="text-xs text-text-secondary mt-1.5 max-w-4xl leading-relaxed font-semibold">
                     {log.details}
                   </p>
 
                   {/* Meta data tags row */}
-                  <div className="mt-2.5 flex flex-wrap gap-2 text-[10px] text-text-muted font-mono">
-                    <span className="bg-card-dark border border-border-dark/60 rounded px-1.5 py-0.5">
+                  <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-text-muted font-mono font-bold">
+                    <span className="bg-white/50 border border-white/70 rounded-full px-2.5 py-0.5 shadow-2xs">
                       Log ID: #{log.id}
                     </span>
                     {log.walletId && (
-                      <span className="bg-card-dark border border-border-dark/60 rounded px-1.5 py-0.5">
+                      <span className="bg-white/50 border border-white/70 rounded-full px-2.5 py-0.5 shadow-2xs">
                         Wallet ID: {log.walletId}
                       </span>
                     )}
                     {log.escrowTransactionId && (
-                      <span className="bg-card-dark border border-border-dark/60 rounded px-1.5 py-0.5">
+                      <span className="bg-white/50 border border-white/70 rounded-full px-2.5 py-0.5 shadow-2xs">
                         Escrow ID: {log.escrowTransactionId}
                       </span>
                     )}

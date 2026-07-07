@@ -5,22 +5,32 @@ import { motion } from 'framer-motion';
 
 export const DashboardLayout = ({ children }) => {
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-dark text-text-primary">
+    <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-bg-dark text-text-primary">
+      {/* Organic Background Blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] left-[5%] h-80 w-80 rounded-full bg-[#8B5CF6]/15 blur-[90px] mix-blend-multiply opacity-65 animate-blob"></div>
+        <div className="absolute top-[30%] right-[10%] h-96 w-96 rounded-full bg-[#FF7EB6]/15 blur-[100px] mix-blend-multiply opacity-65 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[15%] left-[20%] h-88 w-88 rounded-full bg-[#FFC371]/15 blur-[90px] mix-blend-multiply opacity-60 animate-blob animation-delay-4000"></div>
+        <div className="absolute bottom-[25%] right-[20%] h-80 w-80 rounded-full bg-[#60A5FA]/15 blur-[85px] mix-blend-multiply opacity-65 animate-blob animation-delay-6000"></div>
+      </div>
+
       {/* Top Navbar */}
-      <Navbar />
+      <div className="p-4 pb-0 z-20 shrink-0">
+        <Navbar />
+      </div>
 
       {/* Main Core Container */}
-      <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
+      <div className="flex flex-1 overflow-hidden p-4 pt-2 gap-4 z-10">
         {/* Sidebar Nav */}
         <Sidebar />
 
         {/* Scrollable Work Panel */}
-        <main className="flex-1 overflow-y-auto bg-bg-dark/20 p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto rounded-3xl glass-panel p-6 md:p-8 bg-white/20">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto max-w-7xl"
           >
             {children}

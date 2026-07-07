@@ -1,51 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Geist:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', 'Outfit', system-ui, sans-serif;
+  --font-sans: 'Inter', 'Geist', system-ui, sans-serif;
   
-  --color-bg-dark: #0b0f19;
-  --color-card-dark: #151d30;
-  --color-border-dark: #22304d;
+  --color-bg-dark: transparent; /* Allows gradient background to show through */
+  --color-card-dark: rgba(255, 255, 255, 0.65); /* Translucent white glass */
+  --color-border-dark: rgba(255, 255, 255, 0.7); /* Translucent white border */
   
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  --color-text-primary: #1B1B1F; /* Dark charcoal */
+  --color-text-secondary: #62626B; /* Medium charcoal */
+  --color-text-muted: #9CA3AF; /* Light grey */
   
-  --color-brand-primary: #3b82f6;
-  --color-brand-secondary: #06b6d4;
-  --color-brand-accent: #a855f7;
+  --color-brand-primary: #8B5CF6; /* Purple */
+  --color-brand-secondary: #FF7EB6; /* Pink */
+  --color-brand-accent: #FFC371; /* Orange */
   
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #06b6d4;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #60A5FA; /* Blue */
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar styled for light mode */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: rgba(139, 92, 246, 0.15);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: rgba(139, 92, 246, 0.3);
 }
 
 body {
-  background-color: #0b0f19;
-  color: #f8fafc;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: linear-gradient(180deg, #FFFDFC 0%, #F8F5FF 35%, #F4F7FF 70%, #FFFFFF 100%);
+  color: #1B1B1F;
+  font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
@@ -57,29 +57,123 @@ body {
   flex-direction: column;
 }
 
-/* Glassmorphism styling helper */
+/* Glassmorphism card helpers */
 .glass-panel {
-  background: rgba(21, 29, 48, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(34, 48, 77, 0.5);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px;
+  box-shadow: 0 25px 60px rgba(90, 70, 160, 0.08);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-hover:hover {
-  background: rgba(21, 29, 48, 0.85);
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 35px 80px rgba(90, 70, 160, 0.14), 0 0 25px rgba(139, 92, 246, 0.05);
 }
 
-/* Blue cyan gradient texts */
+/* Custom premium gradient text styling */
 .text-gradient {
-  background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #7B61FF 0%, #A855F7 25%, #FF7EB6 55%, #FFC371 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-/* Purple brand accent texts */
-.text-gradient-purple {
-  background: linear-gradient(135deg, #a855f7 0%, #f472b6 100%);
+.text-gradient-secondary {
+  background: linear-gradient(135deg, #6EA8FE, #8B5CF6, #FF9ECF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Premium gradient buttons */
+.btn-primary {
+  background: linear-gradient(135deg, #6F6DFF, #A855F7, #FF8ABF);
+  color: #ffffff;
+  font-weight: 500;
+  border-radius: 999px;
+  border: none;
+  box-shadow: 0 10px 25px -5px rgba(111, 109, 255, 0.4), 0 8px 10px -6px rgba(168, 85, 247, 0.3);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(111, 109, 255, 0.6), 0 12px 15px -6px rgba(168, 85, 247, 0.4), 0 0 15px rgba(255, 126, 182, 0.3);
+  opacity: 0.95;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #1B1B1F;
+  font-weight: 500;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(90, 70, 160, 0.06);
+}
+
+/* Glass inputs styling */
+.glass-input {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  color: #1B1B1F;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+  outline: none;
+}
+
+/* Background blob drift animation keyframes */
+@keyframes blob-drift {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(40px, -60px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob-drift 25s infinite ease-in-out;
+}
+
+.animation-delay-2000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 6s;
+}
+
+.animation-delay-6000 {
+  animation-delay: 9s;
 }

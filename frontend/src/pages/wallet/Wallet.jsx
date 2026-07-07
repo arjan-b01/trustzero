@@ -40,7 +40,6 @@ export const Wallet = () => {
     onSuccess: () => {
       toast.success('Funds deposited successfully!');
       reset();
-      // Refetch wallet data and history
       queryClient.invalidateQueries({ queryKey: ['wallet', userEmail] });
       if (walletId) {
         queryClient.invalidateQueries({ queryKey: ['wallet-history', walletId] });
@@ -76,19 +75,19 @@ export const Wallet = () => {
   return (
     <div className="space-y-8">
       {/* Header title */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-text-primary">
             Wallet Hub
           </h1>
-          <p className="mt-1 text-sm text-text-secondary">
+          <p className="mt-1.5 text-sm text-text-secondary">
             Manage your funds, execute secure deposits, and review financial audit trails.
           </p>
         </div>
 
         <button
           onClick={handleRefresh}
-          className="flex items-center space-x-2 rounded-lg bg-card-dark border border-border-dark px-3 py-2 text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer hover:border-brand-primary/45 transition-all"
+          className="btn-secondary flex items-center space-x-2 px-4 py-2.5 text-xs font-semibold cursor-pointer"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Sync Wallet</span>
@@ -102,47 +101,48 @@ export const Wallet = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-2xl bg-linear-to-br from-brand-primary to-brand-secondary p-6 text-text-primary shadow-xl shadow-brand-primary/10 relative overflow-hidden"
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="rounded-[28px] bg-gradient-to-br from-[#7B61FF] via-[#A855F7] to-[#FF7EB6] p-7 text-white shadow-xl shadow-[#7B61FF]/15 relative overflow-hidden group hover:shadow-2xl transition-all duration-300"
           >
-            <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-10">
-              <WalletIcon className="h-40 w-40" />
+            <div className="absolute right-[-20px] bottom-[-20px] opacity-10 group-hover:scale-105 transition-all duration-500 pointer-events-none">
+              <WalletIcon className="h-44 w-44" />
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium opacity-80">Total Available Balance</span>
+            <div className="flex items-center justify-between z-10 relative">
+              <span className="text-xs font-bold uppercase tracking-wider opacity-85">Total Available Balance</span>
               <CircleDollarSign className="h-6 w-6 opacity-85" />
             </div>
-            <div className="mt-6">
-              <h2 className="text-4xl font-extrabold tracking-tight">
+            <div className="mt-8 z-10 relative">
+              <h2 className="text-[40px] font-black tracking-tight leading-none">
                 {isWalletLoading ? '...' : `$${Number(walletData?.balance || 0).toFixed(2)}`}
               </h2>
-              <p className="mt-2 text-xs opacity-75">
+              <p className="mt-4 text-[10px] uppercase font-bold tracking-widest opacity-75">
                 Wallet ID: {isWalletLoading ? '...' : walletId || 'Not assigned'}
               </p>
             </div>
           </motion.div>
 
           {/* Deposit Form */}
-          <div className="rounded-2xl glass-panel p-6">
-            <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center space-x-2">
-              <ArrowDownCircle className="h-5 w-5 text-brand-secondary" />
+          <div className="glass-panel p-7 shadow-sm">
+            <h3 className="text-base font-bold text-text-primary mb-5 flex items-center space-x-2">
+              <ArrowDownCircle className="h-5 w-5 text-[#8B5CF6]" />
               <span>Deposit Funds</span>
             </h3>
 
             <form onSubmit={handleSubmit(onDeposit)} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">
+                <label className="block text-xs font-semibold text-text-secondary mb-1">
                   Amount (USD)
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <span className="text-text-muted text-sm">$</span>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                    <span className="text-text-muted text-sm font-semibold">$</span>
                   </div>
                   <input
                     type="number"
                     step="0.01"
-                    className={`block w-full rounded-lg border bg-bg-dark/50 py-2 pl-8 pr-3 text-sm text-text-primary placeholder-text-muted focus:border-brand-primary focus:ring-1 focus:ring-brand-primary focus:outline-hidden transition-all ${
-                      errors.amount ? 'border-danger focus:ring-danger' : 'border-border-dark'
+                    className={`block w-full glass-input py-3.5 pl-9 pr-3 transition-all ${
+                      errors.amount ? 'border-danger focus:ring-danger' : 'border-white/80'
                     }`}
                     placeholder="100.00"
                     {...register('amount', {
@@ -152,20 +152,20 @@ export const Wallet = () => {
                   />
                 </div>
                 {errors.amount && (
-                  <p className="mt-1 text-xs text-danger">{errors.amount.message}</p>
+                  <p className="mt-1.5 text-xs text-danger font-medium">{errors.amount.message}</p>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={depositLoading}
-                className="flex w-full justify-center items-center space-x-2 rounded-lg bg-linear-to-r from-brand-primary to-brand-secondary py-2.5 text-sm font-semibold text-text-primary hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-brand-primary/20"
+                className="btn-primary w-full py-3.5 text-sm font-semibold flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
               >
                 {depositLoading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-text-primary border-t-transparent"></div>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4.5 w-4.5" />
                     <span>Deposit Money</span>
                   </>
                 )}
@@ -175,57 +175,57 @@ export const Wallet = () => {
         </div>
 
         {/* History Table (Right 2 Cols) */}
-        <div className="lg:col-span-2 rounded-2xl glass-panel p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center space-x-2">
-            <History className="h-5 w-5 text-brand-primary" />
+        <div className="lg:col-span-2 glass-panel p-7 flex flex-col shadow-sm">
+          <h3 className="text-base font-bold text-text-primary mb-6 flex items-center space-x-2">
+            <History className="h-5 w-5 text-[#8B5CF6]" />
             <span>Transaction & Wallet History</span>
           </h3>
 
           {isHistoryLoading ? (
-            <div className="flex flex-1 items-center justify-center py-20">
-              <div className="h-8 w-8 animate-spin rounded-full border-3 border-brand-primary border-t-transparent"></div>
+            <div className="flex flex-1 items-center justify-center py-24">
+              <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#8B5CF6] border-t-transparent"></div>
             </div>
           ) : !historyData || historyData.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center py-20 text-center text-text-muted">
-              <History className="h-12 w-12 text-text-muted/30 mb-2" />
-              <p className="text-sm">No transaction audit logs found.</p>
+              <History className="h-12 w-12 text-text-muted/20 mb-3" />
+              <p className="text-sm font-medium">No transaction audit logs found.</p>
               <p className="text-xs text-text-secondary mt-1">Make a deposit or fund an escrow to initiate logs.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto flex-1">
+            <div className="overflow-x-auto flex-1 rounded-2xl border border-white/60">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-border-dark text-text-secondary">
-                    <th className="pb-3 font-semibold">Action</th>
-                    <th className="pb-3 font-semibold">Balance Shift</th>
-                    <th className="pb-3 font-semibold">Details</th>
-                    <th className="pb-3 font-semibold text-right">Timestamp</th>
+                  <tr className="bg-white/40 text-text-secondary border-b border-white/70">
+                    <th className="p-4 font-semibold text-xs uppercase tracking-wider">Action</th>
+                    <th className="p-4 font-semibold text-xs uppercase tracking-wider">Balance Shift</th>
+                    <th className="p-4 font-semibold text-xs uppercase tracking-wider">Details</th>
+                    <th className="p-4 font-semibold text-xs uppercase tracking-wider text-right">Timestamp</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-dark">
+                <tbody className="divide-y divide-white/40 bg-white/20">
                   {historyData.map((log) => {
                     const isCredit = Number(log.newBalance) > Number(log.previousBalance);
                     const difference = Math.abs(Number(log.newBalance) - Number(log.previousBalance));
                     return (
-                      <tr key={log.id} className="text-text-secondary hover:text-text-primary transition-all">
-                        <td className="py-3.5">
-                          <span className={`inline-flex items-center space-x-1 rounded-full px-2 py-0.5 text-xs font-bold ${
-                            isCredit ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
+                      <tr key={log.id} className="text-text-secondary hover:text-text-primary hover:bg-white/30 transition-all">
+                        <td className="p-4">
+                          <span className={`inline-flex items-center space-x-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            isCredit ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/20' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20'
                           }`}>
-                            {isCredit ? <ArrowDownCircle className="h-3 w-3" /> : <ArrowUpCircle className="h-3 w-3" />}
+                            {isCredit ? <ArrowDownCircle className="h-3 w-3 shrink-0" /> : <ArrowUpCircle className="h-3 w-3 shrink-0" />}
                             <span>{log.action}</span>
                           </span>
                         </td>
-                        <td className="py-3.5 font-semibold text-text-primary">
+                        <td className="p-4 font-bold text-text-primary">
                           {isCredit ? '+' : '-'}${difference.toFixed(2)}
-                          <div className="text-[10px] text-text-muted font-normal mt-0.5">
-                            Balance: ${Number(log.newBalance).toFixed(2)}
+                          <div className="text-[9px] text-text-muted font-bold mt-0.5 uppercase tracking-wider">
+                            Bal: ${Number(log.newBalance).toFixed(2)}
                           </div>
                         </td>
-                        <td className="py-3.5 max-w-[200px] truncate text-xs" title={log.details}>
+                        <td className="p-4 max-w-[180px] truncate text-xs font-medium" title={log.details}>
                           {log.details}
                         </td>
-                        <td className="py-3.5 text-right text-xs text-text-muted">
+                        <td className="p-4 text-right text-xs font-semibold text-text-muted">
                           {new Date(log.timestamp).toLocaleString()}
                         </td>
                       </tr>

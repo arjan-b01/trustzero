@@ -11,6 +11,7 @@ import {
   LogOut
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 export const Sidebar = () => {
   const { logout } = useAuth();
@@ -32,35 +33,37 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="flex h-[calc(100vh-4rem)] w-64 flex-col justify-between border-r border-border-dark bg-bg-dark/50 p-4">
+    <aside className="hidden md:flex w-64 flex-col justify-between rounded-3xl glass-panel bg-white/40 p-4 shadow-md shrink-0">
       {/* Sidebar Navigation Options */}
-      <nav className="space-y-1.5">
+      <nav className="space-y-2">
         {menuItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
+              `flex items-center space-x-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
                 isActive
-                  ? 'bg-brand-primary/10 text-brand-primary border-l-2 border-brand-primary'
-                  : 'text-text-secondary hover:bg-card-dark hover:text-text-primary'
+                  ? 'bg-gradient-to-r from-[#7B61FF]/10 to-[#FF7EB6]/10 text-[#8B5CF6] border-l-4 border-[#8B5CF6] shadow-xs'
+                  : 'text-text-secondary hover:bg-white/60 hover:text-text-primary hover:translate-x-1'
               }`
             }
           >
-            <item.icon className="h-5 w-5" />
+            <item.icon className="h-5 w-5 shrink-0" />
             <span>{item.name}</span>
           </NavLink>
         ))}
       </nav>
 
       {/* Logout Action Button */}
-      <button
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={handleLogout}
-        className="flex w-full items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium text-danger hover:bg-danger/10 hover:text-danger-light transition-all cursor-pointer"
+        className="flex w-full items-center space-x-3 rounded-xl px-4 py-3 text-sm font-semibold text-danger hover:bg-danger/10 hover:text-danger hover:translate-x-1 transition-all cursor-pointer border border-transparent hover:border-danger/25"
       >
-        <LogOut className="h-5 w-5" />
+        <LogOut className="h-5 w-5 shrink-0" />
         <span>Logout</span>
-      </button>
+      </motion.button>
     </aside>
   );
 };

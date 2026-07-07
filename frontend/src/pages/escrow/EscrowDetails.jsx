@@ -35,7 +35,7 @@ export const EscrowDetails = () => {
   const { register: registerResolve, handleSubmit: handleSubmitResolve, reset: resetResolve } = useForm();
 
   // 1. Fetch Escrow Details
-  const { data: escrow, isLoading, isError, refetch } = useQuery({
+  const { data: escrow, isLoading, isError } = useQuery({
     queryKey: ['escrow', id, userEmail],
     queryFn: () => escrowService.getEscrowById(userEmail, id),
     enabled: !!id && !!userEmail
@@ -107,18 +107,18 @@ export const EscrowDetails = () => {
   if (isLoading) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-primary border-t-transparent"></div>
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#8B5CF6] border-t-transparent"></div>
       </div>
     );
   }
 
   if (isError || !escrow) {
     return (
-      <div className="text-center py-20 rounded-2xl glass-panel text-text-muted">
-        <AlertTriangle className="h-12 w-12 text-danger mx-auto mb-4" />
+      <div className="text-center py-20 rounded-2xl glass-panel text-text-muted bg-white/40">
+        <AlertTriangle className="h-12 w-12 text-[#EF4444] mx-auto mb-4" />
         <h3 className="text-lg font-bold text-text-primary">Failed to load Escrow contract</h3>
         <p className="text-sm mt-1 mb-4">The agreement may not exist or you lack authorization to inspect it.</p>
-        <Link to="/escrows" className="inline-flex items-center space-x-2 text-brand-primary hover:underline">
+        <Link to="/escrows" className="inline-flex items-center space-x-2 text-[#8B5CF6] hover:underline font-semibold">
           <ArrowLeft className="h-4 w-4" />
           <span>Back to list</span>
         </Link>
@@ -144,59 +144,59 @@ export const EscrowDetails = () => {
         <div className="flex items-center space-x-4">
           <Link
             to="/escrows"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card-dark border border-border-dark text-text-secondary hover:text-text-primary transition-all"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/50 border border-white/80 text-text-secondary hover:text-text-primary shadow-xs hover:border-white transition-all cursor-pointer"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-text-primary flex items-center space-x-2">
-              <Scroll className="h-6 w-6 text-brand-primary" />
+              <Scroll className="h-6 w-6 text-[#8B5CF6]" />
               <span>{escrow.title}</span>
             </h1>
-            <p className="text-xs text-text-secondary mt-1">
+            <p className="text-xs text-text-secondary mt-1 font-medium">
               Escrow ID: {escrow.id} • Created on {new Date(escrow.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>
 
         {/* Top Status Indicator */}
-        <span className={`inline-flex rounded-full px-3 py-1 text-sm font-bold border ${
-          escrow.status === 'RELEASED' ? 'bg-success/15 text-success border-success/30' :
-          escrow.status === 'FUNDED' ? 'bg-brand-secondary/15 text-brand-secondary border-brand-secondary/30' :
-          escrow.status === 'DISPUTED' ? 'bg-danger/15 text-danger border-danger/30' :
-          escrow.status === 'REFUNDED' ? 'bg-warning/15 text-warning border-warning/30' :
-          'bg-text-muted/15 text-text-muted border-border-dark'
+        <span className={`inline-flex rounded-full px-4.5 py-1 text-xs font-bold border uppercase tracking-wider ${
+          escrow.status === 'RELEASED' ? 'bg-[#10B981]/15 text-[#059669] border-[#10B981]/30' :
+          escrow.status === 'FUNDED' ? 'bg-[#60A5FA]/15 text-[#2563EB] border-[#60A5FA]/30' :
+          escrow.status === 'DISPUTED' ? 'bg-[#EF4444]/15 text-[#DC2626] border-[#EF4444]/30' :
+          escrow.status === 'REFUNDED' ? 'bg-[#FFC371]/25 text-[#D97706] border-[#FFC371]/40' :
+          'bg-text-muted/15 text-text-muted border-white/60'
         }`}>
           {escrow.status}
         </span>
       </div>
 
       {/* Progress Timeline Tracker */}
-      <div className="rounded-2xl glass-panel p-6 shadow-sm">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-6">Contract Execution Progress</h3>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0">
+      <div className="glass-panel p-6 shadow-sm bg-white/40 border-white/60">
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6">Contract Execution Progress</h3>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-0">
           {steps.map((step, idx) => (
             <React.Fragment key={step}>
-              <div className="flex items-center space-x-3">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+              <div className="flex items-center space-x-3.5">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
                   idx <= currentStepIndex
-                    ? 'bg-brand-primary/20 border-brand-primary text-brand-primary shadow-sm shadow-brand-primary/10'
-                    : 'border-border-dark text-text-muted bg-bg-dark/40'
+                    ? 'bg-[#8B5CF6]/20 border-[#8B5CF6] text-[#8B5CF6] shadow-sm shadow-[#8B5CF6]/10'
+                    : 'border-white/80 text-text-muted bg-white/20'
                 }`}>
-                  {idx < currentStepIndex ? <CheckCircle className="h-5 w-5" /> : idx + 1}
+                  {idx < currentStepIndex ? <CheckCircle className="h-5.5 w-5.5" /> : idx + 1}
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${idx <= currentStepIndex ? 'text-text-primary' : 'text-text-secondary'}`}>
                     {step}
                   </p>
-                  <p className="text-[10px] text-text-muted">
+                  <p className="text-[10px] text-text-muted font-medium">
                     {idx === currentStepIndex ? 'Active Phase' : idx < currentStepIndex ? 'Completed' : 'Upcoming'}
                   </p>
                 </div>
               </div>
               {idx < steps.length - 1 && (
-                <div className={`hidden md:block h-[2px] flex-1 mx-4 transition-all ${
-                  idx < currentStepIndex ? 'bg-brand-primary' : 'bg-border-dark'
+                <div className={`hidden md:block h-[2px] flex-1 mx-4 transition-all duration-500 ${
+                  idx < currentStepIndex ? 'bg-[#8B5CF6]' : 'bg-white/60'
                 }`} />
               )}
             </React.Fragment>
@@ -208,52 +208,52 @@ export const EscrowDetails = () => {
         {/* Left Column (Contract Details & Actions) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Details Card */}
-          <div className="rounded-2xl glass-panel p-6 space-y-6">
+          <div className="glass-panel p-7 space-y-6 shadow-sm bg-white/40 border-white/60">
             <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-text-muted mb-2">Description & Deliverables</h3>
-              <p className="text-sm text-text-secondary leading-relaxed bg-bg-dark/40 rounded-xl p-4 border border-border-dark/50">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-3">Description & Deliverables</h3>
+              <p className="text-sm text-text-secondary leading-relaxed bg-white/30 rounded-2xl p-4.5 border border-white/60 font-medium">
                 {escrow.description}
               </p>
             </div>
 
             {/* Financial Details Row */}
-            <div className="grid gap-4 sm:grid-cols-3 border-t border-border-dark pt-6">
+            <div className="grid gap-4 sm:grid-cols-3 border-t border-white/60 pt-6">
               <div>
-                <span className="text-xs text-text-secondary block">Total Contract Value</span>
+                <span className="text-xs text-text-secondary font-medium block">Total Value</span>
                 <span className="text-xl font-bold text-text-primary">${Number(escrow.amount).toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-xs text-text-secondary block">Commission Fee (3%)</span>
-                <span className="text-xl font-bold text-warning">${Number(escrow.platformFee || 0).toFixed(2)}</span>
+                <span className="text-xs text-text-secondary font-medium block">Commission (3%)</span>
+                <span className="text-xl font-bold text-[#D97706]">${Number(escrow.platformFee || 0).toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-xs text-text-secondary block">Locked Net Guarantee</span>
-                <span className="text-xl font-bold text-success">${Number(escrow.lockedAmount || 0).toFixed(2)}</span>
+                <span className="text-xs text-text-secondary font-medium block">Locked Net Guarantee</span>
+                <span className="text-xl font-bold text-[#10B981]">${Number(escrow.lockedAmount || 0).toFixed(2)}</span>
               </div>
             </div>
 
             {/* Parties Info */}
-            <div className="grid gap-4 sm:grid-cols-2 border-t border-border-dark pt-6 text-xs text-text-secondary">
-              <div className="bg-card-dark/40 rounded-xl p-3 border border-border-dark/30">
-                <span className="text-[10px] text-text-muted font-bold uppercase block">Buyer Participant</span>
+            <div className="grid gap-4 sm:grid-cols-2 border-t border-white/60 pt-6 text-xs text-text-secondary">
+              <div className="bg-white/30 rounded-2xl p-4 border border-white/50 shadow-2xs">
+                <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Buyer Participant</span>
                 <span className="text-sm font-bold text-text-primary mt-1 block">{escrow.buyerName}</span>
-                <span className="text-[10px] text-text-muted">Account ID: {escrow.buyerId}</span>
+                <span className="text-[10px] text-text-muted font-semibold">Account ID: {escrow.buyerId}</span>
               </div>
-              <div className="bg-card-dark/40 rounded-xl p-3 border border-border-dark/30">
-                <span className="text-[10px] text-text-muted font-bold uppercase block">Seller Participant</span>
+              <div className="bg-white/30 rounded-2xl p-4 border border-white/50 shadow-2xs">
+                <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Seller Participant</span>
                 <span className="text-sm font-bold text-text-primary mt-1 block">{escrow.sellerName}</span>
-                <span className="text-[10px] text-text-muted">Account ID: {escrow.sellerId}</span>
+                <span className="text-[10px] text-text-muted font-semibold">Account ID: {escrow.sellerId}</span>
               </div>
             </div>
 
             {/* Dispute Reason section if present */}
             {escrow.disputeReason && (
-              <div className="rounded-xl border border-danger/20 bg-danger/5 p-4 space-y-2">
-                <span className="flex items-center text-xs font-bold text-danger">
-                  <ShieldAlert className="h-4 w-4 mr-1" />
+              <div className="rounded-2xl border border-[#EF4444]/20 bg-[#EF4444]/5 p-5 space-y-2">
+                <span className="flex items-center text-xs font-bold text-[#EF4444]">
+                  <ShieldAlert className="h-4.5 w-4.5 mr-1.5" />
                   Dispute Resolution Audit Record
                 </span>
-                <p className="text-xs text-text-secondary leading-relaxed">
+                <p className="text-xs text-text-secondary leading-relaxed font-semibold">
                   {escrow.disputeReason}
                 </p>
               </div>
@@ -267,7 +267,7 @@ export const EscrowDetails = () => {
               <button
                 onClick={() => fundMutation.mutate()}
                 disabled={fundMutation.isPending}
-                className="flex items-center space-x-2 rounded-lg bg-linear-to-r from-brand-primary to-brand-secondary px-5 py-3 text-sm font-bold text-text-primary shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                className="btn-primary flex items-center space-x-2 px-6 py-3.5 text-sm font-semibold cursor-pointer shadow-sm disabled:opacity-50"
               >
                 {fundMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
                 <span>Fund Escrow Agreement</span>
@@ -281,7 +281,7 @@ export const EscrowDetails = () => {
                   <button
                     onClick={() => releaseMutation.mutate()}
                     disabled={releaseMutation.isPending}
-                    className="flex items-center space-x-2 rounded-lg bg-success px-5 py-3 text-sm font-bold text-text-primary shadow-sm hover:bg-success-dark transition-all cursor-pointer"
+                    className="flex items-center space-x-2 rounded-full bg-[#10B981] px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-[#10B981]/20 hover:bg-[#059669] hover:translate-y-[-2px] transition-all duration-300 cursor-pointer disabled:opacity-50"
                   >
                     {releaseMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
                     <span>Release Funds to Seller</span>
@@ -291,7 +291,7 @@ export const EscrowDetails = () => {
                 {(isBuyer || isSeller) && (
                   <button
                     onClick={() => setShowDisputeModal(true)}
-                    className="flex items-center space-x-2 rounded-lg bg-danger px-5 py-3 text-sm font-bold text-text-primary shadow-sm hover:bg-danger-dark transition-all cursor-pointer"
+                    className="flex items-center space-x-2 rounded-full bg-[#EF4444] px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-[#EF4444]/20 hover:bg-[#DC2626] hover:translate-y-[-2px] transition-all duration-300 cursor-pointer"
                   >
                     <AlertTriangle className="h-4 w-4" />
                     <span>Raise Dispute</span>
@@ -306,7 +306,7 @@ export const EscrowDetails = () => {
                 {isAdmin && (
                   <Link
                     to={`/disputes/${escrow.id}`}
-                    className="flex items-center space-x-2 rounded-lg bg-brand-primary px-5 py-3 text-sm font-bold text-text-primary shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                    className="btn-primary flex items-center space-x-2 px-6 py-3.5 text-sm font-semibold cursor-pointer shadow-sm"
                   >
                     <Hammer className="h-4 w-4" />
                     <span>Open AI Arbitration Hub</span>
@@ -316,7 +316,7 @@ export const EscrowDetails = () => {
                 {isAdmin && (
                   <button
                     onClick={() => setShowResolveModal(true)}
-                    className="flex items-center space-x-2 rounded-lg bg-card-dark border border-border-dark px-5 py-3 text-sm font-bold text-text-primary hover:border-brand-primary/50 transition-all cursor-pointer"
+                    className="btn-secondary px-6 py-3.5 text-sm font-semibold cursor-pointer"
                   >
                     <span>Resolve Manually</span>
                   </button>
@@ -325,7 +325,7 @@ export const EscrowDetails = () => {
                 {!isAdmin && (
                   <Link
                     to={`/disputes/${escrow.id}`}
-                    className="flex items-center space-x-2 rounded-lg bg-linear-to-r from-brand-primary to-brand-secondary px-5 py-3 text-sm font-bold text-text-primary shadow-sm hover:opacity-90 transition-all cursor-pointer"
+                    className="btn-primary px-6 py-3.5 text-sm font-semibold cursor-pointer shadow-sm"
                   >
                     <span>View Live Arbitration Verdict</span>
                   </Link>
@@ -336,10 +336,10 @@ export const EscrowDetails = () => {
         </div>
 
         {/* Right Column (Audit Timeline logs) */}
-        <div className="rounded-2xl glass-panel p-6 flex flex-col justify-between h-fit">
+        <div className="glass-panel p-7 flex flex-col justify-between h-fit shadow-sm bg-white/40 border-white/60">
           <div>
-            <h3 className="text-lg font-bold text-text-primary mb-6 flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-brand-secondary" />
+            <h3 className="text-base font-bold text-text-primary mb-6 flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-[#8B5CF6]" />
               <span>Contract History Timeline</span>
             </h3>
 
@@ -348,16 +348,16 @@ export const EscrowDetails = () => {
                 <p>No audit timeline logs registered for this escrow.</p>
               </div>
             ) : (
-              <div className="relative border-l border-border-dark pl-5 space-y-6 text-xs text-text-secondary">
+              <div className="relative border-l border-white/80 pl-5 space-y-6 text-xs text-text-secondary">
                 {auditLogs.map((log) => (
                   <div key={log.id} className="relative">
                     {/* Circle marker */}
-                    <span className="absolute -left-[25px] top-1.5 flex h-2 w-2 rounded-full bg-brand-primary"></span>
+                    <span className="absolute -left-[25px] top-1.5 flex h-2 w-2 rounded-full bg-[#8B5CF6] shadow-sm"></span>
                     <p className="font-bold text-text-primary">{log.action}</p>
-                    <p className="text-[10px] text-text-muted mt-0.5">
+                    <p className="text-[9px] text-text-muted mt-0.5 uppercase tracking-wider font-semibold">
                       {new Date(log.timestamp).toLocaleString()}
                     </p>
-                    <p className="mt-1 text-text-secondary">{log.details}</p>
+                    <p className="mt-1 text-text-secondary leading-relaxed font-semibold">{log.details}</p>
                   </div>
                 ))}
               </div>
@@ -369,18 +369,18 @@ export const EscrowDetails = () => {
       {/* DISPUTE MODAL */}
       <AnimatePresence>
         {showDisputeModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg rounded-2xl glass-panel p-6 shadow-2xl space-y-4"
+              className="w-full max-w-lg rounded-[28px] glass-panel p-7 shadow-2xl space-y-4 bg-white/80 border-white"
             >
               <h3 className="text-lg font-bold text-text-primary flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-danger" />
+                <AlertTriangle className="h-5 w-5 text-[#EF4444]" />
                 <span>File Structured Dispute Claim</span>
               </h3>
-              <p className="text-xs text-text-secondary">
+              <p className="text-xs text-text-secondary font-medium leading-relaxed">
                 Submit this dispute claim to freeze the contract. Our three-agent AI arbitration pipeline will automatically review statements and delivery logs.
               </p>
 
@@ -389,7 +389,7 @@ export const EscrowDetails = () => {
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Buyer Claim / Issue Statement</label>
                   <textarea
                     rows={3}
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="Describe exactly what went wrong or why you want a refund..."
                     {...register('buyerClaim', { required: true })}
                   ></textarea>
@@ -399,7 +399,7 @@ export const EscrowDetails = () => {
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Seller Response Statement (Optional)</label>
                   <textarea
                     rows={2}
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="Enter seller's defense if already discussed..."
                     {...register('sellerResponse')}
                   ></textarea>
@@ -409,7 +409,7 @@ export const EscrowDetails = () => {
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Agreed Delivery Terms</label>
                   <input
                     type="text"
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="e.g., Deliver website source files by July 15"
                     {...register('agreedDeliveryTerms', { required: true })}
                   />
@@ -419,19 +419,19 @@ export const EscrowDetails = () => {
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Evidence URL / Delivery Proof</label>
                   <input
                     type="text"
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="e.g., URL to github commit or hosted demo site"
                     {...register('evidenceUrl')}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs font-medium">
-                  <label className="flex items-center space-x-2 bg-card-dark/40 border border-border-dark/50 rounded-lg p-2 cursor-pointer">
-                    <input type="checkbox" {...register('deliveryProofSubmitted')} />
+                <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                  <label className="flex items-center space-x-2 bg-white/40 border border-white/60 rounded-xl p-2.5 cursor-pointer shadow-2xs">
+                    <input type="checkbox" {...register('deliveryProofSubmitted')} className="rounded accent-[#8B5CF6]" />
                     <span>Proof Submitted</span>
                   </label>
-                  <label className="flex items-center space-x-2 bg-card-dark/40 border border-border-dark/50 rounded-lg p-2 cursor-pointer">
-                    <input type="checkbox" {...register('deadlineMet')} />
+                  <label className="flex items-center space-x-2 bg-white/40 border border-white/60 rounded-xl p-2.5 cursor-pointer shadow-2xs">
+                    <input type="checkbox" {...register('deadlineMet')} className="rounded accent-[#8B5CF6]" />
                     <span>Deadline Met</span>
                   </label>
                 </div>
@@ -440,14 +440,14 @@ export const EscrowDetails = () => {
                   <button
                     type="button"
                     onClick={() => setShowDisputeModal(false)}
-                    className="rounded-lg border border-border-dark px-4 py-2 text-xs font-semibold hover:bg-card-dark text-text-secondary cursor-pointer"
+                    className="btn-secondary px-4 py-2 text-xs font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={disputeMutation.isPending}
-                    className="flex items-center space-x-1.5 rounded-lg bg-danger px-4 py-2 text-xs font-bold text-text-primary hover:bg-danger-dark cursor-pointer disabled:opacity-50"
+                    className="flex items-center space-x-1.5 rounded-full bg-[#EF4444] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#DC2626] cursor-pointer disabled:opacity-50"
                   >
                     {disputeMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     <span>Submit Dispute</span>
@@ -462,15 +462,15 @@ export const EscrowDetails = () => {
       {/* RESOLVE MANUAL MODAL */}
       <AnimatePresence>
         {showResolveModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-2xl glass-panel p-6 shadow-2xl space-y-4"
+              className="w-full max-w-md rounded-[28px] glass-panel p-7 shadow-2xl space-y-4 bg-white/80 border-white"
             >
               <h3 className="text-lg font-bold text-text-primary flex items-center space-x-2">
-                <Hammer className="h-5 w-5 text-brand-primary" />
+                <Hammer className="h-5 w-5 text-[#8B5CF6]" />
                 <span>Manual Admin Resolution Override</span>
               </h3>
 
@@ -478,7 +478,7 @@ export const EscrowDetails = () => {
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Resolution Outcome</label>
                   <select
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden cursor-pointer"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all cursor-pointer"
                     {...registerResolve('resolution', { required: true })}
                   >
                     <option value="RELEASE_TO_SELLER">RELEASE_TO_SELLER (Release net amount to Seller)</option>
@@ -490,7 +490,7 @@ export const EscrowDetails = () => {
                   <label className="block text-xs font-semibold text-text-secondary mb-1">Admin Notes / Reasoning</label>
                   <textarea
                     rows={3}
-                    className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 p-2.5 text-xs text-text-primary focus:border-brand-primary focus:outline-hidden"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="Document the human administrator audit notes here..."
                     {...registerResolve('adminNotes', { required: true })}
                   ></textarea>
@@ -500,14 +500,14 @@ export const EscrowDetails = () => {
                   <button
                     type="button"
                     onClick={() => setShowResolveModal(false)}
-                    className="rounded-lg border border-border-dark px-4 py-2 text-xs font-semibold hover:bg-card-dark text-text-secondary cursor-pointer"
+                    className="btn-secondary px-4 py-2 text-xs font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={resolveMutation.isPending}
-                    className="rounded-lg bg-brand-primary px-4 py-2 text-xs font-bold text-text-primary hover:opacity-90 cursor-pointer disabled:opacity-50"
+                    className="btn-primary px-5 py-2.5 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50"
                   >
                     {resolveMutation.isPending ? 'Processing...' : 'Confirm Resolution'}
                   </button>

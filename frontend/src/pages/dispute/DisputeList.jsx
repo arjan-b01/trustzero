@@ -18,20 +18,20 @@ export const DisputeList = () => {
     <div className="space-y-8">
       {/* Header Info */}
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-text-primary flex items-center space-x-2">
-          <ShieldAlert className="h-8 w-8 text-danger" />
+        <h1 className="text-3xl font-extrabold tracking-tight text-text-primary flex items-center space-x-2.5">
+          <ShieldAlert className="h-8 w-8 text-[#EF4444]" />
           <span>Disputes & AI Arbitration</span>
         </h1>
-        <p className="mt-1 text-sm text-text-secondary">
+        <p className="mt-1.5 text-sm text-text-secondary">
           Monitor disputed escrows, inspect parallel advocate arguments, and trigger deterministic confidence checks.
         </p>
       </div>
 
       {disputedEscrows.length === 0 ? (
-        <div className="rounded-2xl glass-panel p-16 flex flex-col items-center justify-center text-center text-text-muted">
-          <CheckCircleIcon className="h-16 w-16 text-success/30 mb-4" />
+        <div className="glass-panel p-20 flex flex-col items-center justify-center text-center text-text-muted bg-white/40 shadow-xs border-white/60">
+          <CheckCircleIcon className="h-16 w-16 text-[#10B981]/30 mb-4" />
           <h3 className="text-lg font-bold text-text-primary mb-1">Clear Ledger</h3>
-          <p className="text-sm max-w-sm">No escrow agreements are currently in the disputed state. Everything is running smoothly.</p>
+          <p className="text-sm max-w-sm leading-relaxed">No escrow agreements are currently in the disputed state. Everything is running smoothly.</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -40,41 +40,41 @@ export const DisputeList = () => {
             return (
               <motion.div
                 key={escrow.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="rounded-2xl glass-panel p-6 shadow-sm flex flex-col justify-between glass-panel-hover"
+                transition={{ duration: 0.5, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className="glass-panel p-6 shadow-sm flex flex-col justify-between glass-panel-hover"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="inline-flex items-center space-x-1 rounded-full px-2 py-0.5 text-xs font-bold bg-danger/15 text-danger border border-danger/20">
+                    <span className="inline-flex items-center space-x-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20 uppercase tracking-wider">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       <span>DISPUTED</span>
                     </span>
 
-                    <span className="text-[10px] text-text-muted font-semibold">
-                      ID: {escrow.id}
+                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">
+                      ID: #{escrow.id}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-text-primary truncate mb-1">{escrow.title}</h3>
-                  <p className="text-xs text-text-secondary line-clamp-2 mb-4 h-8">
+                  <h3 className="text-base font-bold text-text-primary truncate mb-1">{escrow.title}</h3>
+                  <p className="text-xs text-text-secondary line-clamp-2 mb-5 h-8 font-medium">
                     {escrow.disputeReason || "Dispute claim submitted. Awaiting AI arbitration or manual intervention."}
                   </p>
                 </div>
 
-                <div className="border-t border-border-dark pt-4 mt-2 flex items-center justify-between">
+                <div className="border-t border-white/60 pt-4 mt-2 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-text-muted font-medium uppercase tracking-wider block">Net Locked Value</span>
-                    <span className="text-lg font-extrabold text-text-primary">${Number(escrow.lockedAmount || escrow.amount).toFixed(2)}</span>
+                    <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Net Locked Value</span>
+                    <span className="text-lg font-black text-text-primary leading-tight">${Number(escrow.lockedAmount || escrow.amount).toFixed(2)}</span>
                   </div>
 
                   <Link
                     to={`/disputes/${escrow.id}`}
-                    className="flex items-center space-x-1.5 rounded-lg bg-danger/10 border border-danger/30 hover:border-danger/60 px-4 py-2 text-xs font-bold text-danger transition-all cursor-pointer"
+                    className="inline-flex items-center space-x-1.5 rounded-full bg-[#EF4444]/10 border border-[#EF4444]/30 hover:border-[#EF4444]/60 px-4 py-2 text-xs font-bold text-[#DC2626] transition-all cursor-pointer shadow-2xs hover:bg-[#EF4444]/15"
                   >
                     <span>{isAdmin ? 'Arbitrate' : 'View Live Verdict'}</span>
-                    <Gavel className="h-4 w-4" />
+                    <Gavel className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               </motion.div>

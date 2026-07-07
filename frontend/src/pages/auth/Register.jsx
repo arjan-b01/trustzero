@@ -41,45 +41,59 @@ export const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg-dark px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#FFFDFC] px-4 py-12 sm:px-6 lg:px-8 overflow-hidden font-sans">
+      {/* Background Organic Blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] left-[20%] h-80 w-80 rounded-full bg-[#8B5CF6]/15 blur-[85px] mix-blend-multiply opacity-65 animate-blob"></div>
+        <div className="absolute bottom-[20%] right-[20%] h-[380px] w-[380px] rounded-full bg-[#FF7EB6]/15 blur-[95px] mix-blend-multiply opacity-60 animate-blob animation-delay-3000"></div>
+        <div className="absolute top-[40%] right-[10%] h-72 w-72 rounded-full bg-[#FFC371]/15 blur-[80px] mix-blend-multiply opacity-55 animate-blob animation-delay-6000"></div>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 25 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md space-y-8 rounded-2xl glass-panel p-8 shadow-2xl"
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-md space-y-6 glass-panel p-8 bg-white/40 shadow-2xl relative"
       >
-        <div className="flex flex-col items-center justify-center text-center">
+        {/* Back Link to Landing */}
+        <div className="absolute top-4 left-4">
+          <Link to="/" className="flex items-center space-x-1 text-xs font-semibold text-text-secondary hover:text-text-primary transition-all">
+            <span>← Home</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-col items-center justify-center text-center pt-2">
           <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-            className="flex h-14 w-14 items-center justify-center rounded-xl bg-linear-to-r from-brand-primary to-brand-secondary text-text-primary shadow-lg shadow-brand-primary/20"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white shadow-md shadow-[#7B61FF]/15"
           >
-            <Shield className="h-8 w-8" />
+            <Shield className="h-6 w-6" />
           </motion.div>
-          <h2 className="mt-6 text-3xl font-extrabold tracking-tight text-text-primary">
+          <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-text-primary">
             Create account on <span className="text-gradient font-black">TrustZero</span>
           </h2>
-          <p className="mt-2 text-sm text-text-secondary">
+          <p className="mt-1.5 text-xs font-medium text-text-secondary">
             Secure multi-agent arbitration pipeline
           </p>
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4 rounded-md shadow-xs">
+        <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4">
             {/* Name Field */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-xs font-semibold text-text-secondary mb-1">
                 Full Name
               </label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <UserIcon className="h-5 w-5 text-text-muted" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                  <UserIcon className="h-4.5 w-4.5 text-text-muted" />
                 </div>
                 <input
                   type="text"
-                  className={`block w-full rounded-lg border bg-bg-dark/50 py-2.5 pl-10 pr-3 text-sm text-text-primary placeholder-text-muted focus:border-brand-primary focus:ring-1 focus:ring-brand-primary focus:outline-hidden transition-all ${
-                    errors.name ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border-dark'
+                  className={`block w-full glass-input py-3 pl-11 pr-3 text-sm placeholder-text-muted transition-all ${
+                    errors.name ? 'border-danger focus:border-danger' : 'border-white/80'
                   }`}
                   placeholder="John Doe"
                   {...register('name', { required: 'Name is required' })}
@@ -95,17 +109,17 @@ export const Register = () => {
 
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-xs font-semibold text-text-secondary mb-1">
                 Email Address
               </label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="h-5 w-5 text-text-muted" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                  <Mail className="h-4.5 w-4.5 text-text-muted" />
                 </div>
                 <input
                   type="email"
-                  className={`block w-full rounded-lg border bg-bg-dark/50 py-2.5 pl-10 pr-3 text-sm text-text-primary placeholder-text-muted focus:border-brand-primary focus:ring-1 focus:ring-brand-primary focus:outline-hidden transition-all ${
-                    errors.email ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border-dark'
+                  className={`block w-full glass-input py-3 pl-11 pr-3 text-sm placeholder-text-muted transition-all ${
+                    errors.email ? 'border-danger focus:border-danger' : 'border-white/80'
                   }`}
                   placeholder="name@example.com"
                   {...register('email', {
@@ -127,17 +141,17 @@ export const Register = () => {
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-xs font-semibold text-text-secondary mb-1">
                 Password
               </label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-5 w-5 text-text-muted" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                  <Lock className="h-4.5 w-4.5 text-text-muted" />
                 </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className={`block w-full rounded-lg border bg-bg-dark/50 py-2.5 pl-10 pr-10 text-sm text-text-primary placeholder-text-muted focus:border-brand-primary focus:ring-1 focus:ring-brand-primary focus:outline-hidden transition-all ${
-                    errors.password ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border-dark'
+                  className={`block w-full glass-input py-3 pl-11 pr-10 text-sm placeholder-text-muted transition-all ${
+                    errors.password ? 'border-danger focus:border-danger' : 'border-white/80'
                   }`}
                   placeholder="••••••••"
                   {...register('password', {
@@ -151,9 +165,9 @@ export const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-muted hover:text-text-secondary"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-text-muted hover:text-text-secondary"
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                 </button>
               </div>
               {errors.password && (
@@ -166,33 +180,33 @@ export const Register = () => {
 
             {/* Role Field */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-xs font-semibold text-text-secondary mb-1">
                 Account Role
               </label>
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Briefcase className="h-5 w-5 text-text-muted" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+                  <Briefcase className="h-4.5 w-4.5 text-text-muted" />
                 </div>
                 <select
-                  className="block w-full rounded-lg border border-border-dark bg-bg-dark/50 py-2.5 pl-10 pr-3 text-sm text-text-primary focus:border-brand-primary focus:ring-1 focus:ring-brand-primary focus:outline-hidden transition-all cursor-pointer"
+                  className="block w-full glass-input py-3 pl-11 pr-3 text-sm transition-all border-white/80 cursor-pointer"
                   {...register('role', { required: 'Role is required' })}
                 >
-                  <option value="BUYER" className="bg-bg-dark text-text-primary">BUYER (Funds Escrow Contracts)</option>
-                  <option value="SELLER" className="bg-bg-dark text-text-primary">SELLER (Fulfills Deliverables)</option>
-                  <option value="ADMIN" className="bg-bg-dark text-text-primary">ADMIN (Oversees Disputes)</option>
+                  <option value="BUYER" className="bg-[#FFFDFC] text-text-primary">BUYER (Funds Escrows)</option>
+                  <option value="SELLER" className="bg-[#FFFDFC] text-text-primary">SELLER (Fulfills Deliverables)</option>
+                  <option value="ADMIN" className="bg-[#FFFDFC] text-text-primary">ADMIN (Oversees Disputes)</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <div>
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-lg bg-linear-to-r from-brand-primary to-brand-secondary py-3 px-4 text-sm font-semibold text-text-primary hover:opacity-90 focus:ring-2 focus:ring-brand-primary/50 focus:outline-hidden disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-brand-primary/20"
+              className="btn-primary w-full py-3.5 text-sm font-semibold flex items-center justify-center cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-text-primary border-t-transparent"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
               ) : (
                 'Create Account'
               )}
@@ -200,12 +214,12 @@ export const Register = () => {
           </div>
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-sm text-text-secondary">
+        <div className="text-center mt-4">
+          <p className="text-xs font-medium text-text-secondary">
             Already have an account?{' '}
             <Link
               to="/login"
-              className="font-medium text-brand-primary hover:text-brand-secondary transition-all"
+              className="font-bold text-[#8B5CF6] hover:text-[#FF7EB6] transition-all"
             >
               Sign in
             </Link>

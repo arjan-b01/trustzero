@@ -52,6 +52,10 @@ public class DisputeArbitrationService {
         this.transactionTemplate = transactionTemplate;
     }
 
+    private String upper(String s) {
+        return s == null ? "" : s.trim().toUpperCase();
+    }
+
     private static final String EVIDENCE_ANALYST_SYSTEM = "You are an Evidence Analyst. Review the dispute claims and evidence URLs. Assess what the evidence actually proves. Return ONLY valid JSON: { \"evidenceStrength\": \"STRONG\"|\"MODERATE\"|\"WEAK\"|\"NONE\", \"evidenceSupports\": \"BUYER\"|\"SELLER\"|\"NEITHER\", \"caseClarity\": \"CLEAR\"|\"AMBIGUOUS\", \"evidenceSummary\": \"brief summary of what the URLs show\" }";
     private static final String BUYER_ADVOCATE_SYSTEM = "You are the Buyer Advocate. Argue why funds should be REFUNDED to the buyer based on the dispute details and the Evidence Analyst's report. Return plain text only.";
     private static final String SELLER_ADVOCATE_SYSTEM = "You are the Seller Advocate. Argue why funds should be RELEASED to the seller based on the dispute details and the Evidence Analyst's report. Return plain text only.";
@@ -89,11 +93,10 @@ public class DisputeArbitrationService {
         String evidenceSummary = "Failed to analyze evidence.";
 
         try {
-            String cleanAnalystJson = analystRaw.replaceAll("```json", "").replaceAll("```", "").trim();
-            JsonNode analystJson = objectMapper.readTree(cleanAnalystJson);
-            evidenceStrength = analystJson.path("evidenceStrength").asText("NONE");
-            evidenceSupports = analystJson.path("evidenceSupports").asText("NEITHER");
-            caseClarity = analystJson.path("caseClarity").asText("AMBIGUOUS");
+            JsonNode analystJson = parseJsonObject(analystRaw);
+            evidenceStrength = upper(analystJson.path("evidenceStrength").asText("NONE"));
+            evidenceSupports = upper(analystJson.path("evidenceSupports").asText("NEITHER"));
+            caseClarity      = upper(analystJson.path("caseClarity").asText("AMBIGUOUS"));
             evidenceSummary = analystJson.path("evidenceSummary").asText("No summary provided.");
         } catch (Exception e) {
             System.err.println("Agent 0 JSON Parsing failed. Defaulting to NONE.");
@@ -118,7 +121,7 @@ public class DisputeArbitrationService {
         try {
             String cleanArbJson = arbitratorRaw.replaceAll("```json", "").replaceAll("```", "").trim();
             JsonNode arbJson = objectMapper.readTree(cleanArbJson);
-            verdict = arbJson.path("verdict").asText("REFUND");
+            verdict = upper(arbJson.path("verdict").asText("REFUND"));
             reasoning = arbJson.path("reasoning").asText("No reasoning provided.");
         } catch (Exception e) {
             reasoning = "Failed to parse Arbitrator JSON. Manual review required. Raw: " + arbitratorRaw;
@@ -207,5 +210,16 @@ public class DisputeArbitrationService {
                 "\nBuyer Claim: " + record.getBuyerClaim() +
                 "\nSeller Response: " + (record.getSellerResponse() != null ? record.getSellerResponse() : "None") +
                 "\n\n--- EVIDENCE ANALYST REPORT ---\n" + evidenceSummary;
+    }
+
+    private static final java.util.regex.Pattern JSON_BLOCK =
+            java.util.regex.Pattern.compile("\\{.*}", java.util.regex.Pattern.DOTALL);
+
+    private JsonNode parseJsonObject(String raw) throws Exception {
+        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("Empty response");
+        String cleaned = raw.replaceAll("```json", "").replaceAll("```", "").trim();
+        java.util.regex.Matcher m = JSON_BLOCK.matcher(cleaned);
+        if (!m.find()) throw new IllegalArgumentException("No JSON object found");
+        return objectMapper.readTree(m.group());
     }
 }

@@ -69,7 +69,8 @@ public class WalletService {
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient funds.");
+            throw new InsufficientFundsException(
+                    "Insufficient funds: balance=" + wallet.getBalance() + ", required=" + amount);
         }
 
         BigDecimal previousBalance = wallet.getBalance();

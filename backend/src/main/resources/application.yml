@@ -22,7 +22,7 @@ jwt:
 fireworks:
   api:
     url: https://api.fireworks.ai/inference/v1/chat/completions
-    key: ${FIREWORKS_API_KEY}
+    key: ${FIREWORKS_API_KEY:mock_key}
     model: accounts/fireworks/models/glm-5p2
 
 platform:

@@ -79,6 +79,11 @@ public class DisputeArbitrationService {
         DisputeRecord record = disputeRecordRepository.findByEscrowId(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dispute data not found"));
 
+        if (record.getSellerResponse() == null || record.getSellerResponse().isBlank()) {
+            throw new IllegalStateException(
+                    "Cannot arbitrate: the seller has not yet submitted a response.");
+        }
+
         // ==========================================
         // AGENT 0: THE EVIDENCE ANALYST
         // ==========================================

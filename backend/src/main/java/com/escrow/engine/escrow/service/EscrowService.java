@@ -63,7 +63,7 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse fundEscrow(String buyerEmail, Long escrowId) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User buyer = userRepository.findByEmail(buyerEmail).orElseThrow();
 
@@ -101,7 +101,7 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse releaseFunds(String buyerEmail, Long escrowId) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User buyer = userRepository.findByEmail(buyerEmail).orElseThrow();
 
@@ -121,7 +121,7 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse openDispute(String userEmail, Long escrowId, DisputeRequest request) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
         User requestingUser = userRepository.findByEmail(userEmail).orElseThrow();
 
@@ -157,7 +157,7 @@ public class EscrowService {
             throw new RuntimeException("Unauthorized: Only administrators can resolve disputes");
         }
 
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
 
         TransactionStatus targetStatus = (request.resolution() == DisputeResolution.RELEASE_TO_SELLER)
@@ -207,7 +207,7 @@ public class EscrowService {
 
     @Transactional
     public void resolveDisputeByAI(Long escrowId, String verdict, String reasoning) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
 
         TransactionStatus targetStatus = verdict.equals("RELEASE")
@@ -237,7 +237,7 @@ public class EscrowService {
 
     @Transactional
     public EscrowResponse submitSellerResponse(String sellerEmail, Long escrowId, com.escrow.engine.dispute.dto.SellerResponseRequest request) {
-        EscrowTransaction tx = escrowRepository.findById(escrowId)
+        EscrowTransaction tx = escrowRepository.findByIdWithLock(escrowId)
                 .orElseThrow(() -> new ResourceNotFoundException("Escrow transaction not found"));
 
         User seller = userRepository.findByEmail(sellerEmail).orElseThrow();

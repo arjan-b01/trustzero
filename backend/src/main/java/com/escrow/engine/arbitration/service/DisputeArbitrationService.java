@@ -124,8 +124,7 @@ public class DisputeArbitrationService {
         String reasoning = "";
 
         try {
-            String cleanArbJson = arbitratorRaw.replaceAll("```json", "").replaceAll("```", "").trim();
-            JsonNode arbJson = objectMapper.readTree(cleanArbJson);
+            JsonNode arbJson = parseJsonObject(arbitratorRaw);
             verdict = upper(arbJson.path("verdict").asText("REFUND"));
             reasoning = arbJson.path("reasoning").asText("No reasoning provided.");
         } catch (Exception e) {

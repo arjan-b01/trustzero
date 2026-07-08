@@ -38,7 +38,7 @@ public class AuditLog {
     @Column(precision = 15, scale = 2, updatable = false)
     private BigDecimal newBalance;
 
-    @Column(length = 2000, updatable = false)
+    @Column(columnDefinition = "TEXT", updatable = false)
     private String details;
 
     @CreationTimestamp

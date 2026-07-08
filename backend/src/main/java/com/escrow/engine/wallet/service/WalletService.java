@@ -32,22 +32,16 @@ public class WalletService {
         return mapToResponse(wallet);
     }
 
+    @Transactional
     public WalletResponse deposit(String email, DepositRequest request) {
         User user = getUserByEmail(email);
         BigDecimal amount = request.amount().setScale(2, java.math.RoundingMode.HALF_UP);
 
-        // 1. Charge external provider FIRST — no DB lock held.
         if (!paymentProvider.processDeposit(user.getId(), amount)) {
             throw new RuntimeException("Payment processing failed");
         }
 
-        // 2. Apply credit in a short locked transaction.
-        return applyDeposit(user, amount);
-    }
-
-    @Transactional
-    protected WalletResponse applyDeposit(User user, BigDecimal amount) {
-        Wallet wallet = walletRepository.findByUserIdWithLock(user.getId())  // <-- LOCK
+        Wallet wallet = walletRepository.findByUserIdWithLock(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Wallet not found"));
 
         BigDecimal previousBalance = wallet.getBalance();

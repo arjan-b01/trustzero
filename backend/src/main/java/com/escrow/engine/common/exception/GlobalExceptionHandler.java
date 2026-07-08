@@ -71,6 +71,16 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ResponseEntity<?> handleOptimisticLock(
+            org.springframework.dao.OptimisticLockingFailureException ex) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                "The resource was modified by another transaction. Please retry.",
+                null
+        );
+    }
+
     // Catch-all fallback
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {

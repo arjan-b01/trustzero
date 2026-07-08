@@ -16,13 +16,13 @@ spring:
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1iYXNlNjQtZW5jb2RlZC1qd3Qtc2VjcmV0LWZvci10cnVzdHplcm8tZXNjcm93LWVuZ2luZQ==}
+  secret: ${JWT_SECRET}
   expiration: 86400000
 
 fireworks:
   api:
     url: https://api.fireworks.ai/inference/v1/chat/completions
-    key: ${FIREWORKS_API_KEY:dummy_fireworks_api_key}
+    key: ${FIREWORKS_API_KEY}
     model: accounts/fireworks/models/glm-5p2
 
 platform:

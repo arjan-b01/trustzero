@@ -29,13 +29,35 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
             ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
 
         if(authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
+
+        // AFTER the null check at line 38, wrap everything in:
+        try {
+            final String jwt = authHeader.substring(7);
+            final String userEmail = jwtUtil.extractUsername(jwt);
+
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if (jwtUtil.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (io.jsonwebtoken.JwtException e) {
+            // Token expired / tampered / malformed — continue unauthenticated.
+            // Spring Security will produce a clean 401.
+            SecurityContextHolder.clearContext();
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
+        }
+        filterChain.doFilter(request, response);
 
         jwt = authHeader.substring(7);
         userEmail = jwtUtil.extractUsername(jwt);

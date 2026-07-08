@@ -16,11 +16,10 @@ import {
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
-export const Sidebar = ({ onClose }) => {
+export const Sidebar = ({ onClose, theme, onToggleTheme }) => {
   const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  const [isDark, setIsDark] = useState(false);
 
   const menuItems = [
     ...(currentUser?.role === 'ADMIN' ? [{ name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }] : []),
@@ -111,12 +110,11 @@ export const Sidebar = ({ onClose }) => {
                 <span className="text-xs text-text-secondary font-semibold">Dark Mode (Beta)</span>
                 <button
                   onClick={() => {
-                    setIsDark(!isDark);
-                    toast.success('Dark mode is currently under development!');
+                    if (onToggleTheme) onToggleTheme();
                   }}
                   className="rounded-xl p-2 bg-white/60 hover:bg-white text-text-primary border border-white/80 transition-all cursor-pointer"
                 >
-                  {isDark ? <Sun className="h-4 w-4 text-warning" /> : <Moon className="h-4 w-4 text-[#8B5CF6]" />}
+                  {theme === 'dark' ? <Sun className="h-4 w-4 text-warning" /> : <Moon className="h-4 w-4 text-[#8B5CF6]" />}
                 </button>
               </div>
             </motion.div>

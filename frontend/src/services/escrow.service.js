@@ -82,6 +82,20 @@ const escrowService = {
     return response.data;
   },
 
+  // Submit Seller Response
+  async submitSellerResponse(userEmail, id, responseData) {
+    const response = await api.post(`/escrow/${id}/dispute/seller-response`, {
+      sellerResponse: responseData.sellerResponse,
+      sellerEvidenceUrl: responseData.sellerEvidenceUrl || responseData.evidenceUrl || ""
+    });
+    updateLocalEscrowStatus(userEmail, id, 'DISPUTED', {
+      sellerResponse: responseData.sellerResponse,
+      sellerEvidenceUrl: responseData.sellerEvidenceUrl || responseData.evidenceUrl || "",
+      ...response.data
+    });
+    return response.data;
+  },
+
   // Get all escrows for active user (hybrid from local storage)
   getEscrowList() {
     return getLocalEscrows();

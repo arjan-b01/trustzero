@@ -30,9 +30,11 @@ export const EscrowDetails = () => {
 
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [showResolveModal, setShowResolveModal] = useState(false);
+  const [showSellerResponseModal, setShowSellerResponseModal] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
   const { register: registerResolve, handleSubmit: handleSubmitResolve, reset: resetResolve } = useForm();
+  const { register: registerSeller, handleSubmit: handleSubmitSeller, reset: resetSeller } = useForm();
 
   // 1. Fetch Escrow Details
   const { data: escrow, isLoading, isError } = useQuery({
@@ -101,6 +103,21 @@ export const EscrowDetails = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to resolve dispute.');
+    }
+  });
+
+  // 7. Submit Seller Response Mutation
+  const sellerResponseMutation = useMutation({
+    mutationFn: (data) => escrowService.submitSellerResponse(userEmail, id, data),
+    onSuccess: () => {
+      toast.success('Dispute response submitted successfully!');
+      setShowSellerResponseModal(false);
+      resetSeller();
+      queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
+      queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to submit response.');
     }
   });
 
@@ -322,6 +339,16 @@ export const EscrowDetails = () => {
                   </button>
                 )}
 
+                {isSeller && !escrow.sellerResponse && (
+                  <button
+                    onClick={() => setShowSellerResponseModal(true)}
+                    className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white px-6 py-3.5 text-sm font-bold shadow-md hover:translate-y-[-2px] transition-all duration-300 cursor-pointer"
+                  >
+                    <AlertTriangle className="h-4 w-4" />
+                    <span>Respond to Dispute</span>
+                  </button>
+                )}
+
                 {!isAdmin && (
                   <Link
                     to={`/disputes/${escrow.id}`}
@@ -392,16 +419,6 @@ export const EscrowDetails = () => {
                     className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
                     placeholder="Describe exactly what went wrong or why you want a refund..."
                     {...register('buyerClaim', { required: true })}
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1">Seller Response Statement (Optional)</label>
-                  <textarea
-                    rows={2}
-                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
-                    placeholder="Enter seller's defense if already discussed..."
-                    {...register('sellerResponse')}
                   ></textarea>
                 </div>
 
@@ -510,6 +527,68 @@ export const EscrowDetails = () => {
                     className="btn-primary px-5 py-2.5 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50"
                   >
                     {resolveMutation.isPending ? 'Processing...' : 'Confirm Resolution'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* SELLER RESPONSE MODAL */}
+      <AnimatePresence>
+        {showSellerResponseModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg rounded-[28px] bg-white dark:bg-[#13111C] border border-gray-200 dark:border-white/10 p-7 shadow-2xl space-y-4"
+            >
+              <h3 className="text-lg font-bold text-text-primary flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-[#8B5CF6]" />
+                <span>Submit Dispute Defense & Response</span>
+              </h3>
+              <p className="text-xs text-text-secondary font-medium leading-relaxed">
+                Provide your statement defending your performance or delivery of the terms. This log will be ingested by the AI agents during arbitration.
+              </p>
+
+              <form onSubmit={handleSubmitSeller((data) => sellerResponseMutation.mutate(data))} className="space-y-4 text-sm text-text-secondary">
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1">Seller Response Statement</label>
+                  <textarea
+                    rows={3}
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
+                    placeholder="Provide detailed defense statements, stating why you are entitled to the release of escrow funds..."
+                    {...registerSeller('sellerResponse', { required: true, minLength: 10 })}
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1">Seller Evidence URL / Delivery Proof URL (Optional)</label>
+                  <input
+                    type="text"
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
+                    placeholder="e.g., URL to github repository, shared Google Drive, or transaction proof"
+                    {...registerSeller('sellerEvidenceUrl')}
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSellerResponseModal(false)}
+                    className="btn-secondary px-4 py-2 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={sellerResponseMutation.isPending}
+                    className="flex items-center space-x-1.5 rounded-full bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white px-5 py-2 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {sellerResponseMutation.isPending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    <span>Submit Response</span>
                   </button>
                 </div>
               </form>

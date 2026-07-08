@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const DashboardLayout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('tz_theme') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+    localStorage.setItem('tz_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-bg-dark text-text-primary">
@@ -18,7 +37,12 @@ export const DashboardLayout = ({ children }) => {
 
       {/* Top Navbar */}
       <div className="p-4 pb-0 z-20 shrink-0">
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <Navbar 
+          isSidebarOpen={isSidebarOpen} 
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
       </div>
 
       {/* Main Core Container */}
@@ -35,7 +59,7 @@ export const DashboardLayout = ({ children }) => {
                 onClick={() => setIsSidebarOpen(false)}
                 className="fixed inset-0 z-35 bg-black/35 backdrop-blur-xs"
               />
-              <Sidebar onClose={() => setIsSidebarOpen(false)} />
+              <Sidebar onClose={() => setIsSidebarOpen(false)} theme={theme} onToggleTheme={toggleTheme} />
             </>
           )}
         </AnimatePresence>

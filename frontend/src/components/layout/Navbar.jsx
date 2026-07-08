@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Bell, User, LogOut, Menu } from 'lucide-react';
+import { Shield, Bell, User, LogOut, Menu, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-export const Navbar = ({ onMenuClick }) => {
+export const Navbar = ({ onMenuClick, theme, onToggleTheme }) => {
   const { logout, currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -72,19 +72,31 @@ export const Navbar = ({ onMenuClick }) => {
           <Menu className="h-5.5 w-5.5" />
         </motion.button>
 
-        <motion.div 
-          whileHover={{ scale: 1.05, rotate: 5 }}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white shadow-sm"
-        >
-          <Shield className="h-5.5 w-5.5" />
-        </motion.div>
-        <span className="text-xl font-bold tracking-tight text-text-primary">
-          Trust<span className="text-gradient font-black">Zero</span>
-        </span>
+        <Link to="/escrows" className="flex items-center space-x-3 hover:opacity-90 transition-opacity select-none">
+          <motion.div 
+            whileHover={{ scale: 1.05, rotate: 5 }}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white shadow-sm"
+          >
+            <Shield className="h-5.5 w-5.5" />
+          </motion.div>
+          <span className="text-xl font-bold tracking-tight text-text-primary">
+            Trust<span className="text-gradient font-black">Zero</span>
+          </span>
+        </Link>
       </div>
 
       {/* Utilities & User Actions */}
       <div className="flex items-center space-x-4">
+        {/* Theme Toggle Button */}
+        <motion.button 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onToggleTheme}
+          className="rounded-xl p-2.5 text-text-secondary hover:bg-white/80 dark:hover:bg-white/10 hover:text-text-primary dark:hover:text-white transition-all cursor-pointer border border-transparent hover:border-white/40 shadow-xs"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5 text-warning" /> : <Moon className="h-5 w-5 text-[#8B5CF6]" />}
+        </motion.button>
+
         {/* Notifications Icon Button */}
         <div className="relative">
           <motion.button 
@@ -102,14 +114,14 @@ export const Navbar = ({ onMenuClick }) => {
             )}
           </motion.button>
 
-          {/* Notifications Dropdown Panel */}
+          {/* Notifications Dropdown Panel (Solid non-glass) */}
           <AnimatePresence>
             {isNotificationsOpen && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-0 mt-2 w-80 rounded-2xl glass-panel bg-white/95 border border-white/80 p-4 shadow-xl z-40 space-y-3"
+                className="absolute right-0 mt-2 w-80 rounded-2xl bg-white dark:bg-[#13111C] border border-gray-200 dark:border-white/10 p-4 shadow-xl z-40 space-y-3"
               >
                 <div className="flex items-center justify-between border-b border-text-muted/10 pb-2 text-xs">
                   <span className="font-bold text-text-primary">Notifications</span>
@@ -141,7 +153,7 @@ export const Navbar = ({ onMenuClick }) => {
                         }}
                         className={`p-2.5 rounded-xl border text-xs leading-relaxed transition-all cursor-pointer ${
                           n.read
-                            ? 'border-white/50 bg-white/20 text-text-secondary'
+                            ? 'border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/2 text-text-secondary'
                             : 'border-[#8B5CF6]/20 bg-[#8B5CF6]/5 text-text-primary font-medium'
                         }`}
                       >
@@ -179,14 +191,14 @@ export const Navbar = ({ onMenuClick }) => {
             </div>
           </motion.div>
 
-          {/* Profile Dropdown Menu */}
+          {/* Profile Dropdown Menu (Solid non-glass) */}
           <AnimatePresence>
             {isProfileOpen && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-0 mt-2 w-48 rounded-2xl glass-panel bg-white/95 border border-white/80 p-2 shadow-xl z-40"
+                className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#13111C] border border-gray-200 dark:border-white/10 p-2 shadow-xl z-40"
               >
                 <div className="px-3.5 py-2.5 border-b border-text-muted/10 text-xs">
                   <p className="font-semibold text-text-primary">{currentUser?.name || 'User'}</p>

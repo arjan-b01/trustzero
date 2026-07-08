@@ -52,14 +52,17 @@ const escrowService = {
   async openDispute(userEmail, id, claimData) {
     const response = await api.post(`/escrow/${id}/dispute`, {
       buyerClaim: claimData.buyerClaim,
+      agreedDeliveryTerms: claimData.agreedDeliveryTerms || "Deliver work within deadline.",
+      buyerEvidenceUrl: claimData.evidenceUrl || ""
+    });
+    updateLocalEscrowStatus(userEmail, id, 'DISPUTED', {
+      disputeReason: "Structured dispute opened by BUYER",
+      buyerClaim: claimData.buyerClaim,
       sellerResponse: claimData.sellerResponse || "Awaiting seller response.",
       deliveryProofSubmitted: !!claimData.deliveryProofSubmitted,
       deadlineMet: !!claimData.deadlineMet,
       evidenceUrl: claimData.evidenceUrl || "",
-      agreedDeliveryTerms: claimData.agreedDeliveryTerms || "Deliver work within deadline."
-    });
-    updateLocalEscrowStatus(userEmail, id, 'DISPUTED', {
-      disputeReason: "Structured dispute opened by BUYER",
+      agreedDeliveryTerms: claimData.agreedDeliveryTerms || "Deliver work within deadline.",
       ...response.data
     });
     return response.data;

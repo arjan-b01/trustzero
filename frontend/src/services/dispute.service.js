@@ -7,17 +7,21 @@ const disputeService = {
     const response = await api.post(`/escrow/${escrowId}/arbitrate`);
     const data = response.data;
     
-    // If AI arbitration auto-executed, sync state in local storage
-    if (data.autoExecuted) {
-      const finalStatus = data.verdict === 'RELEASE' ? 'RELEASED' : 'REFUNDED';
-      updateLocalEscrowStatus(userEmail, escrowId, finalStatus, {
-        disputeReason: `AI-RESOLVED: ${data.reasoning}`
-      });
-    } else {
-      updateLocalEscrowStatus(userEmail, escrowId, 'DISPUTED', {
-        disputeReason: `AI-ESCALATED: AI recommended ${data.verdict} (Confidence: ${data.confidenceScore})`
-      });
-    }
+    const finalStatus = data.autoExecuted ? (data.verdict === 'RELEASE' ? 'RELEASED' : 'REFUNDED') : 'DISPUTED';
+    const disputeReason = data.autoExecuted 
+      ? `AI-RESOLVED: ${data.arbitratorReasoning}`
+      : `AI-ESCALATED: AI recommended ${data.verdict} (Confidence: ${data.confidenceScore})`;
+
+    // Sync AI arbitration results in local storage
+    updateLocalEscrowStatus(userEmail, escrowId, finalStatus, {
+      disputeReason: disputeReason,
+      aiRecommendedVerdict: data.verdict,
+      aiConfidenceScore: data.confidenceScore,
+      aiBuyerArgument: data.buyerArgument,
+      aiSellerArgument: data.sellerArgument,
+      aiReasoning: data.arbitratorReasoning,
+      autoExecuted: data.autoExecuted
+    });
     
     return data;
   }

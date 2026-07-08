@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const DashboardLayout = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   return (
     <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-bg-dark text-text-primary">
       {/* Organic Background Blobs */}
@@ -16,13 +18,27 @@ export const DashboardLayout = ({ children }) => {
 
       {/* Top Navbar */}
       <div className="p-4 pb-0 z-20 shrink-0">
-        <Navbar />
+        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
       </div>
 
       {/* Main Core Container */}
       <div className="flex flex-1 overflow-hidden p-4 pt-2 gap-4 z-10">
         {/* Sidebar Nav */}
-        <Sidebar />
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsSidebarOpen(false)}
+                className="fixed inset-0 z-35 bg-black/35 backdrop-blur-xs"
+              />
+              <Sidebar onClose={() => setIsSidebarOpen(false)} />
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Scrollable Work Panel */}
         <main className="flex-1 overflow-y-auto rounded-3xl glass-panel p-6 md:p-8 bg-white/20">

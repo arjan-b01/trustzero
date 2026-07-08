@@ -19,7 +19,8 @@ import {
   Clock,
   Hammer,
   AlertTriangle,
-  Loader
+  Loader,
+  CheckCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -434,12 +435,12 @@ export const DisputeDetails = () => {
               </div>
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Delivery Proof URL</span>
-                <span className="font-semibold text-text-primary break-all block mt-0.5">{localEscrow?.evidenceUrl || "No proof URL uploaded."}</span>
+                <span className="font-semibold text-text-primary break-all block mt-0.5">{localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "No proof URL uploaded."}</span>
               </div>
               <div className="flex justify-between border-t border-white/40 pt-2.5">
                 <span>Proof Submitted (DB)</span>
-                <span className={`font-black ${localEscrow?.deliveryProofSubmitted ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {localEscrow?.deliveryProofSubmitted ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
               <div className="flex justify-between">

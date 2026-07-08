@@ -203,8 +203,10 @@ export const Wallet = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/40 bg-white/20">
-                  {historyData.map((log) => {
-                    const isCredit = Number(log.newBalance) > Number(log.previousBalance);
+                  {[...historyData]
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .map((log) => {
+                      const isCredit = Number(log.newBalance) > Number(log.previousBalance);
                     const difference = Math.abs(Number(log.newBalance) - Number(log.previousBalance));
                     return (
                       <tr key={log.id} className="text-text-secondary hover:text-text-primary hover:bg-white/30 transition-all">

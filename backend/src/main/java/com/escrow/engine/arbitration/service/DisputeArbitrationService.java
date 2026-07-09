@@ -1,5 +1,5 @@
 package com.escrow.engine.arbitration.service;
-
+import com.escrow.engine.arbitration.client.EvidenceFetcher;
 import com.escrow.engine.arbitration.client.FireworksClient;
 import com.escrow.engine.arbitration.dto.ArbitrationResult;
 import com.escrow.engine.audit.service.AuditLogService;
@@ -13,8 +13,8 @@ import com.escrow.engine.user.entity.User;
 import com.escrow.engine.user.enums.UserRole;
 import com.escrow.engine.user.repository.UserRepository;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -29,10 +29,9 @@ public class DisputeArbitrationService {
     private final DisputeRecordRepository disputeRecordRepository;
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
+    private final EvidenceFetcher evidenceFetcher;
     private final TransactionTemplate transactionTemplate;
-
-    // Instantiated directly to bypass dependency injection overhead for this specific class
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     public DisputeArbitrationService(
             FireworksClient fireworksClient,
@@ -41,7 +40,9 @@ public class DisputeArbitrationService {
             DisputeRecordRepository disputeRecordRepository,
             UserRepository userRepository,
             AuditLogService auditLogService,
-            TransactionTemplate transactionTemplate) {
+            TransactionTemplate transactionTemplate,
+            EvidenceFetcher evidenceFetcher,
+            ObjectMapper objectMapper) {
 
         this.fireworksClient = fireworksClient;
         this.escrowService = escrowService;
@@ -50,13 +51,44 @@ public class DisputeArbitrationService {
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
         this.transactionTemplate = transactionTemplate;
+        this.evidenceFetcher = evidenceFetcher;
+        this.objectMapper = objectMapper;
     }
 
     private String upper(String s) {
         return s == null ? "" : s.trim().toUpperCase();
     }
 
-    private static final String EVIDENCE_ANALYST_SYSTEM = "You are an Evidence Analyst. Review the dispute claims and evidence URLs. Assess what the evidence actually proves. Return ONLY valid JSON: { \"evidenceStrength\": \"STRONG\"|\"MODERATE\"|\"WEAK\"|\"NONE\", \"evidenceSupports\": \"BUYER\"|\"SELLER\"|\"NEITHER\", \"caseClarity\": \"CLEAR\"|\"AMBIGUOUS\", \"evidenceSummary\": \"brief summary of what the URLs show\" }";
+    private static final String EVIDENCE_ANALYST_SYSTEM = """
+    You are an Evidence Analyst for an escrow dispute resolution system.
+    You will receive:
+    - The buyer's claim
+    - The seller's response
+    - FETCHED CONTENT from evidence URLs (actual text extracted from web pages,
+      or notes indicating the URL is an image/video that needs separate analysis)
+
+    Evaluate ONLY the fetched content. Ignore claims that have no supporting evidence.
+
+    Return ONLY valid JSON (no markdown, no conversational text) with this exact shape:
+    {
+      "evidenceStrength": "STRONG" | "MODERATE" | "WEAK" | "NONE",
+      "evidenceSupports": "BUYER" | "SELLER" | "NEITHER",
+      "caseClarity": "CLEAR" | "AMBIGUOUS",
+      "evidenceSummary": "what the evidence proves",
+      "keyFindings": ["finding 1", "finding 2"],
+      "contradictions": ["contradiction 1"]
+    }
+
+    Definitions:
+    - STRONG: Documentary proof (tracking shows delivered, photo shows item working,
+              fetched text confirms key claim)
+    - MODERATE: Circumstantial evidence (communication logs, partial documentation)
+    - WEAK: Claims without supporting documents
+    - NONE: No verifiable evidence at all, or all URLs failed to fetch
+
+    If evidence URLs failed to fetch or are images you cannot analyze, set
+    evidenceStrength to NONE or WEAK depending on whether text evidence exists.
+    """;
     private static final String BUYER_ADVOCATE_SYSTEM = "You are the Buyer Advocate. Argue why funds should be REFUNDED to the buyer based on the dispute details and the Evidence Analyst's report. Return plain text only.";
     private static final String SELLER_ADVOCATE_SYSTEM = "You are the Seller Advocate. Argue why funds should be RELEASED to the seller based on the dispute details and the Evidence Analyst's report. Return plain text only.";
     private static final String ARBITRATOR_SYSTEM = "You are a neutral Arbitrator. Evaluate the dispute, the evidence report, and both advocate arguments. Output ONLY valid JSON: { \"verdict\": \"RELEASE\"|\"REFUND\", \"reasoning\": \"explanation\" }";
@@ -87,8 +119,16 @@ public class DisputeArbitrationService {
         // ==========================================
         // AGENT 0: THE EVIDENCE ANALYST
         // ==========================================
-        String evidenceContext = "Buyer Claim: " + record.getBuyerClaim() + "\nBuyer Evidence URL: " + record.getBuyerEvidenceUrl() +
-                "\nSeller Response: " + record.getSellerResponse() + "\nSeller Evidence URL: " + record.getSellerEvidenceUrl();
+        // FIX: Fetch actual URL content so the LLM has something real to evaluate.
+        EvidenceFetcher.FetchedEvidence buyerFetched = evidenceFetcher.fetch(record.getBuyerEvidenceUrl());
+        EvidenceFetcher.FetchedEvidence sellerFetched = evidenceFetcher.fetch(record.getSellerEvidenceUrl());
+
+        String evidenceContext = "Buyer Claim: " + record.getBuyerClaim() +
+                "\n\nBuyer Evidence URL: " + record.getBuyerEvidenceUrl() +
+                "\nBuyer Evidence Fetched Content:\n" + buyerFetched.getContent() +
+                "\n\nSeller Response: " + record.getSellerResponse() +
+                "\n\nSeller Evidence URL: " + record.getSellerEvidenceUrl() +
+                "\nSeller Evidence Fetched Content:\n" + sellerFetched.getContent();
 
         String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
@@ -131,27 +171,40 @@ public class DisputeArbitrationService {
             reasoning = "Failed to parse Arbitrator JSON. Manual review required. Raw: " + arbitratorRaw;
         }
 
-        // ==========================================
-        // THE CONFIDENCE ENGINE
-        // ==========================================
-        double confidenceScore = 0.40;
-        boolean strongEvidence = evidenceStrength.equals("STRONG");
-        boolean moderateEvidence = evidenceStrength.equals("MODERATE");
-        boolean clearCase = caseClarity.equals("CLEAR");
+// ==========================================
+// MULTI-FACTOR CONFIDENCE ENGINE
+// ==========================================
+// Previously: confidence = f(evidenceStrength, caseClarity)
+//   → only 2 binary inputs → most cases landed on 0.40
+// Now: weighted score across 5 factors
+        boolean strongEvidence   = "STRONG".equals(evidenceStrength);
+        boolean moderateEvidence = "MODERATE".equals(evidenceStrength);
+        boolean clearCase        = "CLEAR".equals(caseClarity);
 
-        if (strongEvidence && clearCase) {
-            confidenceScore = 0.92;
-        } else if (strongEvidence) {
-            confidenceScore = 0.75;
-        } else if (moderateEvidence && clearCase) {
-            confidenceScore = 0.72;
-        } else if (moderateEvidence) {
-            confidenceScore = 0.60;
-        } else if (clearCase) {
-            confidenceScore = 0.55;
-        } else {
-            confidenceScore = 0.40;
-        }
+// Factor 3: Evidence-Verdict Corroboration
+// Does the evidence support the same party the verdict favors?
+        boolean evidenceCorroboratesVerdict =
+                ("BUYER".equals(evidenceSupports)  && "REFUND".equals(verdict))
+                        || ("SELLER".equals(evidenceSupports) && "RELEASE".equals(verdict));
+
+// Factor 4: Advocate Convergence
+// Did both advocates acknowledge the same core facts? Approximate by checking
+// if both arguments mention the evidence summary terms.
+        boolean advocatesConverged = argumentsShareFacts(buyerArgument, sellerArgument, evidenceSummary);
+
+// Factor 5: Arbitrator Certainty
+// Does the reasoning use hedging language ("likely", "probably", "appears")?
+        boolean arbitratorCertain = !containsHedging(reasoning);
+
+        double confidenceScore = 0.30; // baseline
+        if (strongEvidence)                     confidenceScore += 0.25;
+        else if (moderateEvidence)              confidenceScore += 0.15;
+        if (clearCase)                          confidenceScore += 0.15;
+        if (evidenceCorroboratesVerdict)        confidenceScore += 0.15;
+        if (advocatesConverged)                 confidenceScore += 0.10;
+        if (arbitratorCertain)                  confidenceScore += 0.05;
+// Cap at 0.95 — never claim 100% certainty
+        confidenceScore = Math.min(confidenceScore, 0.95);
 
         // Reassigning to final variables for the lambda scope below
         final String finalEvidenceStrength = evidenceStrength;
@@ -225,5 +278,46 @@ public class DisputeArbitrationService {
         java.util.regex.Matcher m = JSON_BLOCK.matcher(cleaned);
         if (!m.find()) throw new IllegalArgumentException("No JSON object found");
         return objectMapper.readTree(m.group());
+    }
+
+    /**
+     * Checks if both advocate arguments reference terms from the evidence summary.
+     * Crude heuristic: if both arguments mention 2+ keywords from the summary,
+     * they're engaging with the same facts.
+     */
+    private boolean argumentsShareFacts(String buyerArg, String sellerArg, String summary) {
+        if (summary == null || summary.length() < 20) return false;
+        // Extract meaningful words from summary (length > 5 to skip filler)
+        String[] summaryWords = summary.toLowerCase()
+                .replaceAll("[^a-z0-9 ]", " ")
+                .split("\\s+");
+        java.util.Set<String> keywords = new java.util.HashSet<>();
+        for (String w : summaryWords) {
+            if (w.length() > 5) keywords.add(w);
+        }
+        if (keywords.size() < 2) return false;
+
+        String buyerLower = buyerArg.toLowerCase();
+        String sellerLower = sellerArg.toLowerCase();
+        long buyerMatches = keywords.stream().filter(buyerLower::contains).count();
+        long sellerMatches = keywords.stream().filter(sellerLower::contains).count();
+
+        return buyerMatches >= 2 && sellerMatches >= 2;
+    }
+
+    /**
+     * Detects hedging language in the arbitrator's reasoning.
+     * If the arbitrator is uncertain, they use words like "likely", "probably".
+     */
+    private boolean containsHedging(String text) {
+        if (text == null) return true;
+        String lower = text.toLowerCase();
+        String[] hedges = {"likely", "probably", "appears", "seems", "possibly",
+                "might", "could", "unclear", "uncertain", "ambiguous",
+                "i think", "i believe", "perhaps"};
+        for (String h : hedges) {
+            if (lower.contains(h)) return true;
+        }
+        return false;
     }
 }

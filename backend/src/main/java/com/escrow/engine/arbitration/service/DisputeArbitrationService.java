@@ -1,4 +1,6 @@
 package com.escrow.engine.arbitration.service;
+import com.escrow.engine.dispute.entity.Evidence;
+import com.escrow.engine.dispute.repository.EvidenceRepository;
 import com.escrow.engine.arbitration.client.EvidenceFetcher;
 import com.escrow.engine.arbitration.client.FireworksClient;
 import com.escrow.engine.arbitration.dto.ArbitrationResult;
@@ -20,6 +22,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.List;
+
 @Service
 public class DisputeArbitrationService {
 
@@ -32,6 +36,7 @@ public class DisputeArbitrationService {
     private final EvidenceFetcher evidenceFetcher;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
+    private final EvidenceRepository evidenceRepository;
 
     public DisputeArbitrationService(
             FireworksClient fireworksClient,
@@ -42,7 +47,8 @@ public class DisputeArbitrationService {
             AuditLogService auditLogService,
             TransactionTemplate transactionTemplate,
             EvidenceFetcher evidenceFetcher,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            EvidenceRepository evidenceRepository) {
 
         this.fireworksClient = fireworksClient;
         this.escrowService = escrowService;
@@ -53,6 +59,7 @@ public class DisputeArbitrationService {
         this.transactionTemplate = transactionTemplate;
         this.evidenceFetcher = evidenceFetcher;
         this.objectMapper = objectMapper;
+        this.evidenceRepository = evidenceRepository;
     }
 
     private String upper(String s) {
@@ -119,17 +126,30 @@ public class DisputeArbitrationService {
         // ==========================================
         // AGENT 0: THE EVIDENCE ANALYST
         // ==========================================
-        // FIX: Fetch actual URL content so the LLM has something real to evaluate.
         EvidenceFetcher.FetchedEvidence buyerFetched = evidenceFetcher.fetch(record.getBuyerEvidenceUrl());
         EvidenceFetcher.FetchedEvidence sellerFetched = evidenceFetcher.fetch(record.getSellerEvidenceUrl());
+
+        List<Evidence> buyerImageEvidence = evidenceRepository.findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "BUYER");
+        List<Evidence> sellerImageEvidence = evidenceRepository.findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "SELLER");
+
+        String buyerImageAnalyses = buyerImageEvidence.isEmpty()
+                ? "No image evidence uploaded."
+                : formatImageEvidence(buyerImageEvidence);
+
+        String sellerImageAnalyses = sellerImageEvidence.isEmpty()
+                ? "No image evidence uploaded."
+                : formatImageEvidence(sellerImageEvidence);
 
         String evidenceContext = "Buyer Claim: " + record.getBuyerClaim() +
                 "\n\nBuyer Evidence URL: " + record.getBuyerEvidenceUrl() +
                 "\nBuyer Evidence Fetched Content:\n" + buyerFetched.getContent() +
+                "\n\nBuyer Image Evidence (analyzed by Vision Model):\n" + buyerImageAnalyses +
                 "\n\nSeller Response: " + record.getSellerResponse() +
                 "\n\nSeller Evidence URL: " + record.getSellerEvidenceUrl() +
-                "\nSeller Evidence Fetched Content:\n" + sellerFetched.getContent();
+                "\nSeller Evidence Fetched Content:\n" + sellerFetched.getContent() +
+                "\n\nSeller Image Evidence (analyzed by Vision Model):\n" + sellerImageAnalyses;
 
+        // CALL AGENT 0
         String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
         String evidenceStrength = "NONE";
@@ -319,5 +339,21 @@ public class DisputeArbitrationService {
             if (lower.contains(h)) return true;
         }
         return false;
+    }
+
+    /**
+     * Formats image evidence records into a readable summary for the Evidence Analyst.
+     * Each image's VLM analysis is included so the text-based analyst can "see" what
+     * the images show.
+     */
+    private String formatImageEvidence(List<Evidence> evidenceList) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < evidenceList.size(); i++) {
+            Evidence e = evidenceList.get(i);
+            sb.append("  Image ").append(i + 1).append(": ").append(e.getFileName())
+                    .append(" (").append(e.getFileType()).append(")\n");
+            sb.append("  Vision Model Analysis: ").append(e.getVlmAnalysis()).append("\n\n");
+        }
+        return sb.toString();
     }
 }

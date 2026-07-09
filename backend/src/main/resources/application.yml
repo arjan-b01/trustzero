@@ -15,6 +15,11 @@ spring:
       hibernate:
         format_sql: true
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000
@@ -22,8 +27,9 @@ jwt:
 fireworks:
   api:
     url: https://api.fireworks.ai/inference/v1/chat/completions
-    key: ${FIREWORKS_API_KEY:mock_key}
+    key: ${FIREWORKS_API_KEY}
     model: accounts/fireworks/models/glm-5p2
+    vision-model: accounts/fireworks/models/qwen3p7-plus
 
 platform:
   commission-rate: 0.03

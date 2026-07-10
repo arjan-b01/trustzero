@@ -174,8 +174,15 @@ public class DisputeArbitrationService {
         // ==========================================
         // AGENT 0: THE EVIDENCE ANALYST
         // ==========================================
-        EvidenceFetcher.FetchedEvidence buyerFetched = evidenceFetcher.fetch(record.getBuyerEvidenceUrl());
-        EvidenceFetcher.FetchedEvidence sellerFetched = evidenceFetcher.fetch(record.getSellerEvidenceUrl());
+        java.util.concurrent.CompletableFuture<EvidenceFetcher.FetchedEvidence> buyerFetchFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> evidenceFetcher.fetch(record.getBuyerEvidenceUrl()));
+        java.util.concurrent.CompletableFuture<EvidenceFetcher.FetchedEvidence> sellerFetchFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> evidenceFetcher.fetch(record.getSellerEvidenceUrl()));
+
+        java.util.concurrent.CompletableFuture.allOf(buyerFetchFuture, sellerFetchFuture).join();
+
+        EvidenceFetcher.FetchedEvidence buyerFetched = buyerFetchFuture.join();
+        EvidenceFetcher.FetchedEvidence sellerFetched = sellerFetchFuture.join();
 
         List<Evidence> buyerImageEvidence = evidenceRepository.findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "BUYER");
         List<Evidence> sellerImageEvidence = evidenceRepository.findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "SELLER");
@@ -198,7 +205,7 @@ public class DisputeArbitrationService {
                 "\n\nSeller Image Evidence (analyzed by Vision Model):\n" + sellerImageAnalyses;
 
         // CALL AGENT 0
-        String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
+        String analystRaw = vllmClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
         String evidenceStrength = "NONE";
         String evidenceSupports = "NEITHER";
@@ -385,8 +392,15 @@ public class DisputeArbitrationService {
         // === AGENT 0: EVIDENCE ANALYST ===
         sink.tryEmitNext(ArbitrationEvent.progress("Fetching evidence URLs..."));
 
-        EvidenceFetcher.FetchedEvidence buyerFetched = evidenceFetcher.fetch(record.getBuyerEvidenceUrl());
-        EvidenceFetcher.FetchedEvidence sellerFetched = evidenceFetcher.fetch(record.getSellerEvidenceUrl());
+        java.util.concurrent.CompletableFuture<EvidenceFetcher.FetchedEvidence> buyerFetchFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> evidenceFetcher.fetch(record.getBuyerEvidenceUrl()));
+        java.util.concurrent.CompletableFuture<EvidenceFetcher.FetchedEvidence> sellerFetchFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> evidenceFetcher.fetch(record.getSellerEvidenceUrl()));
+
+        java.util.concurrent.CompletableFuture.allOf(buyerFetchFuture, sellerFetchFuture).join();
+
+        EvidenceFetcher.FetchedEvidence buyerFetched = buyerFetchFuture.join();
+        EvidenceFetcher.FetchedEvidence sellerFetched = sellerFetchFuture.join();
 
         List<Evidence> buyerImageEvidence = evidenceRepository
                 .findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "BUYER");
@@ -411,7 +425,7 @@ public class DisputeArbitrationService {
 
         sink.tryEmitNext(ArbitrationEvent.agentStart("evidence_analyst"));
 
-        String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
+        String analystRaw = vllmClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
         String evidenceStrength = "NONE";
         String evidenceSupports = "NEITHER";

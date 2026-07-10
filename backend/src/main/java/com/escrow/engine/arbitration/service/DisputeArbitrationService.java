@@ -14,7 +14,9 @@ import com.escrow.engine.escrow.service.EscrowService;
 import com.escrow.engine.user.entity.User;
 import com.escrow.engine.user.enums.UserRole;
 import com.escrow.engine.user.repository.UserRepository;
-
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import com.escrow.engine.arbitration.dto.ArbitrationEvent;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DisputeArbitrationService {
@@ -279,6 +282,203 @@ public class DisputeArbitrationService {
                     isAutoExecuted
             );
         });
+    }
+
+    /**
+     * STREAMING VERSION of arbitrate().
+     *
+     * Emits ArbitrationEvent objects via a Reactor Sinks.Many as each agent
+     * completes. The controller wraps this in a Flux for SSE streaming.
+     *
+     * This duplicates the logic of arbitrate() but emits events along the way.
+     * For a hackathon this is fine — for production you'd refactor to share logic.
+     */
+    public Flux<ArbitrationEvent> arbitrateStream(Long escrowId, String adminEmail) {
+        Sinks.Many<ArbitrationEvent> sink = Sinks.many().unicast().onBackpressureBuffer();
+
+        // Run the arbitration asynchronously, emitting events to the sink
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                runArbitrationStreaming(escrowId, adminEmail, sink);
+                sink.tryEmitComplete();
+            } catch (Exception e) {
+                sink.tryEmitNext(ArbitrationEvent.error(e.getMessage()));
+                sink.tryEmitComplete();
+            }
+        });
+
+        return sink.asFlux();
+    }
+
+    private void runArbitrationStreaming(Long escrowId, String adminEmail,
+                                         Sinks.Many<ArbitrationEvent> sink) {
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found"));
+
+        if (admin.getRole() != UserRole.ADMIN) {
+            sink.tryEmitNext(ArbitrationEvent.error("Unauthorized: Only ADMIN can trigger arbitration"));
+            return;
+        }
+
+        EscrowTransaction tx = escrowRepository.findById(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Escrow not found"));
+
+        if (!tx.getStatus().name().equals("DISPUTED")) {
+            sink.tryEmitNext(ArbitrationEvent.error("Arbitration can only run on DISPUTED escrows."));
+            return;
+        }
+
+        DisputeRecord record = disputeRecordRepository.findByEscrowId(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispute data not found"));
+
+        if (record.getSellerResponse() == null || record.getSellerResponse().isBlank()) {
+            sink.tryEmitNext(ArbitrationEvent.error(
+                    "Cannot arbitrate: the seller has not yet submitted a response."));
+            return;
+        }
+
+        // === AGENT 0: EVIDENCE ANALYST ===
+        sink.tryEmitNext(ArbitrationEvent.progress("Fetching evidence URLs..."));
+
+        EvidenceFetcher.FetchedEvidence buyerFetched = evidenceFetcher.fetch(record.getBuyerEvidenceUrl());
+        EvidenceFetcher.FetchedEvidence sellerFetched = evidenceFetcher.fetch(record.getSellerEvidenceUrl());
+
+        List<Evidence> buyerImageEvidence = evidenceRepository
+                .findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "BUYER");
+        List<Evidence> sellerImageEvidence = evidenceRepository
+                .findByEscrowIdAndPartyOrderByUploadedAtAsc(escrowId, "SELLER");
+
+        String buyerImageAnalyses = buyerImageEvidence.isEmpty()
+                ? "No image evidence uploaded."
+                : formatImageEvidence(buyerImageEvidence);
+        String sellerImageAnalyses = sellerImageEvidence.isEmpty()
+                ? "No image evidence uploaded."
+                : formatImageEvidence(sellerImageEvidence);
+
+        String evidenceContext = "Buyer Claim: " + record.getBuyerClaim() +
+                "\n\nBuyer Evidence URL: " + record.getBuyerEvidenceUrl() +
+                "\nBuyer Evidence Fetched Content:\n" + buyerFetched.getContent() +
+                "\n\nBuyer Image Evidence (analyzed by Vision Model):\n" + buyerImageAnalyses +
+                "\n\nSeller Response: " + record.getSellerResponse() +
+                "\n\nSeller Evidence URL: " + record.getSellerEvidenceUrl() +
+                "\nSeller Evidence Fetched Content:\n" + sellerFetched.getContent() +
+                "\n\nSeller Image Evidence (analyzed by Vision Model):\n" + sellerImageAnalyses;
+
+        sink.tryEmitNext(ArbitrationEvent.agentStart("evidence_analyst"));
+
+        String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
+
+        String evidenceStrength = "NONE";
+        String evidenceSupports = "NEITHER";
+        String caseClarity = "AMBIGUOUS";
+        String evidenceSummary = "Failed to analyze evidence.";
+
+        try {
+            JsonNode analystJson = parseJsonObject(analystRaw);
+            evidenceStrength = upper(analystJson.path("evidenceStrength").asText("NONE"));
+            evidenceSupports = upper(analystJson.path("evidenceSupports").asText("NEITHER"));
+            caseClarity      = upper(analystJson.path("caseClarity").asText("AMBIGUOUS"));
+            evidenceSummary = analystJson.path("evidenceSummary").asText("No summary provided.");
+        } catch (Exception e) {
+            System.err.println("Agent 0 JSON Parsing failed. Defaulting to NONE.");
+        }
+
+        sink.tryEmitNext(ArbitrationEvent.agentComplete("evidence_analyst",
+                Map.of(
+                        "evidenceStrength", evidenceStrength,
+                        "evidenceSupports", evidenceSupports,
+                        "caseClarity", caseClarity,
+                        "summary", evidenceSummary
+                )));
+
+        // === AGENTS 1 & 2: ADVOCATES (run sequentially for demo readability) ===
+        String disputeContext = buildContext(tx, record, evidenceSummary);
+
+        sink.tryEmitNext(ArbitrationEvent.agentStart("buyer_advocate"));
+        String buyerArgument = fireworksClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext);
+        sink.tryEmitNext(ArbitrationEvent.agentComplete("buyer_advocate", buyerArgument));
+
+        sink.tryEmitNext(ArbitrationEvent.agentStart("seller_advocate"));
+        String sellerArgument = fireworksClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext);
+        sink.tryEmitNext(ArbitrationEvent.agentComplete("seller_advocate", sellerArgument));
+
+        // === AGENT 3: ARBITRATOR ===
+        sink.tryEmitNext(ArbitrationEvent.agentStart("arbitrator"));
+        String arbitratorInput = disputeContext + "\n\n=== BUYER ADVOCATE ===\n" + buyerArgument
+                + "\n\n=== SELLER ADVOCATE ===\n" + sellerArgument;
+        String arbitratorRaw = fireworksClient.call(ARBITRATOR_SYSTEM, arbitratorInput);
+
+        String verdict = "REFUND";
+        String reasoning = "";
+        try {
+            JsonNode arbJson = parseJsonObject(arbitratorRaw);
+            verdict = upper(arbJson.path("verdict").asText("REFUND"));
+            reasoning = arbJson.path("reasoning").asText("No reasoning provided.");
+        } catch (Exception e) {
+            reasoning = "Failed to parse Arbitrator JSON. Manual review required. Raw: " + arbitratorRaw;
+        }
+
+        // === CONFIDENCE ENGINE ===
+        boolean strongEvidence   = "STRONG".equals(evidenceStrength);
+        boolean moderateEvidence = "MODERATE".equals(evidenceStrength);
+        boolean clearCase        = "CLEAR".equals(caseClarity);
+        boolean evidenceCorroboratesVerdict =
+                ("BUYER".equals(evidenceSupports)  && "REFUND".equals(verdict))
+                        || ("SELLER".equals(evidenceSupports) && "RELEASE".equals(verdict));
+        boolean advocatesConverged = argumentsShareFacts(buyerArgument, sellerArgument, evidenceSummary);
+        boolean arbitratorCertain = !containsHedging(reasoning);
+
+        double confidenceScore = 0.30;
+        if (strongEvidence)              confidenceScore += 0.25;
+        else if (moderateEvidence)       confidenceScore += 0.15;
+        if (clearCase)                   confidenceScore += 0.15;
+        if (evidenceCorroboratesVerdict) confidenceScore += 0.15;
+        if (advocatesConverged)          confidenceScore += 0.10;
+        if (arbitratorCertain)           confidenceScore += 0.05;
+        confidenceScore = Math.min(confidenceScore, 0.95);
+
+        sink.tryEmitNext(ArbitrationEvent.verdict(verdict, confidenceScore, reasoning));
+
+        // === SAVE TO DATABASE (same as non-streaming version) ===
+        final String fEvidenceStrength = evidenceStrength;
+        final String fEvidenceSupports = evidenceSupports;
+        final String fCaseClarity = caseClarity;
+        final String fEvidenceSummary = evidenceSummary;
+        final String fVerdict = verdict;
+        final String fReasoning = reasoning;
+        final double fConfidenceScore = confidenceScore;
+        final String fBuyerArgument = buyerArgument;
+        final String fSellerArgument = sellerArgument;
+
+        transactionTemplate.executeWithoutResult(status -> {
+            record.setAiEvidenceStrength(fEvidenceStrength);
+            record.setAiEvidenceSupports(fEvidenceSupports);
+            record.setAiCaseClarity(fCaseClarity);
+            record.setAiEvidenceAnalysis(fEvidenceSummary);
+            record.setAiBuyerArgument(fBuyerArgument);
+            record.setAiSellerArgument(fSellerArgument);
+            record.setAiReasoning(fReasoning);
+            record.setAiConfidenceScore(fConfidenceScore);
+            record.setAiRecommendedVerdict(fVerdict);
+
+            if (fConfidenceScore >= 0.75) {
+                record.setAutoExecuted(true);
+                escrowService.resolveDisputeByAI(escrowId, fVerdict, fReasoning);
+                auditLogService.logArbitrationEvent("AI-DECIDED", escrowId, admin.getId(),
+                        "AI auto-executed: " + fVerdict + " (Confidence: " + fConfidenceScore + ")");
+            } else {
+                record.setAutoExecuted(false);
+                auditLogService.logArbitrationEvent("AI-ESCALATED", escrowId, admin.getId(),
+                        "AI recommended: " + fVerdict + " (Confidence: " + fConfidenceScore + ")");
+            }
+
+            disputeRecordRepository.save(record);
+        });
+
+        sink.tryEmitNext(ArbitrationEvent.progress(
+                confidenceScore >= 0.75
+                        ? "Dispute auto-resolved: " + verdict
+                        : "Dispute escalated for manual review (confidence below threshold)"));
     }
 
     private String buildContext(EscrowTransaction tx, DisputeRecord record, String evidenceSummary) {

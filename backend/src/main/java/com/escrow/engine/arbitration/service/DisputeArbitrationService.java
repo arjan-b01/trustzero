@@ -108,28 +108,28 @@ public class DisputeArbitrationService {
     Argue why funds should be REFUNDED to the buyer.
     
     Rules:
-    - Be concise (max 150 words)
-    - Cite specific evidence from the dispute context
+    - Write 200-300 words (detailed, not brief)
+    - Cite specific evidence: mention URLs, quote fetched content, reference image analyses
+    - Structure: opening statement, 2-3 key arguments with evidence, conclusion
     - Do NOT introduce yourself or explain what you're doing
-    - Do NOT use phrases like "As the Buyer Advocate" or "I will argue"
     - Start directly with your argument
+    -Do NOT use phrases like "As the Buyer Advocate" or "I will argue"
     
-    Output format: plain text, no markdown, no headers, no bullet points.
-    Just a direct, persuasive argument.
+    Output format: plain text, no markdown headers, no bullet points.
     """;
     private static final String SELLER_ADVOCATE_SYSTEM = """
     You are the Seller Advocate in an escrow dispute.
     Argue why funds should be RELEASED to the seller.
     
     Rules:
-    - Be concise (max 150 words)
-    - Cite specific evidence from the dispute context
+    - Write 200-300 words (detailed, not brief)
+    - Cite specific evidence: mention URLs, quote fetched content, reference image analyses
+    - Structure: opening statement, 2-3 key arguments with evidence, conclusion
     - Do NOT introduce yourself or explain what you're doing
-    - Do NOT use phrases like "As the Seller Advocate" or "I will argue"
     - Start directly with your argument
+    -Do NOT use phrases like "As the Seller Advocate" or "I will argue"
     
-    Output format: plain text, no markdown, no headers, no bullet points.
-    Just a direct, persuasive argument.
+    Output format: plain text, no markdown headers, no bullet points.
     """;
     private static final String ARBITRATOR_SYSTEM = """
     You are a neutral Arbitrator for an escrow dispute.
@@ -225,7 +225,7 @@ public class DisputeArbitrationService {
         // ==========================================
         // AGENTS 1 & 2: THE ADVOCATES
         // ==========================================
-        String disputeContext = buildContext(tx, record, evidenceSummary);
+        String disputeContext = buildContext(tx, record, evidenceSummary, evidenceContext);
         String buyerArgument = vllmClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext);
         String sellerArgument = vllmClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext);
 
@@ -451,7 +451,7 @@ public class DisputeArbitrationService {
                 )));
 
         // === AGENTS 1 & 2: ADVOCATES (run sequentially for demo readability) ===
-        String disputeContext = buildContext(tx, record, evidenceSummary);
+        String disputeContext = buildContext(tx, record, evidenceSummary, evidenceContext);
 
         sink.tryEmitNext(ArbitrationEvent.progress("Both Advocates analyzing in parallel on AMD GPU..."));
 
@@ -548,12 +548,14 @@ public class DisputeArbitrationService {
                         : "Dispute escalated for manual review (confidence below threshold)"));
     }
 
-    private String buildContext(EscrowTransaction tx, DisputeRecord record, String evidenceSummary) {
+    private String buildContext(EscrowTransaction tx, DisputeRecord record,
+                                String evidenceSummary, String evidenceContext) {
         return "Escrow Title: " + tx.getTitle() + "\nAmount: " + tx.getAmount() +
                 "\nTerms: " + record.getAgreedDeliveryTerms() +
                 "\nBuyer Claim: " + record.getBuyerClaim() +
                 "\nSeller Response: " + (record.getSellerResponse() != null ? record.getSellerResponse() : "None") +
-                "\n\n--- EVIDENCE ANALYST REPORT ---\n" + evidenceSummary;
+                "\n\n--- EVIDENCE ANALYST REPORT ---\n" + evidenceSummary +
+                "\n\n--- RAW EVIDENCE (URLs + fetched content) ---\n" + evidenceContext;
     }
 
     private static final java.util.regex.Pattern JSON_BLOCK =

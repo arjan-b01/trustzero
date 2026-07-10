@@ -46,7 +46,7 @@ public class VllmClient {
                             Map.of("role", "user", "content", userMessage)
                     ),
                     "temperature", 0.1,
-                    "max_tokens", 800
+                    "max_tokens", 1500
             );
 
             String jsonRequest = objectMapper.writeValueAsString(requestBody);

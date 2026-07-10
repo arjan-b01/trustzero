@@ -26,10 +26,18 @@ jwt:
 
 fireworks:
   api:
+    # Fireworks — used for Evidence Analyst + Arbitrator (strong reasoning) + Vision
     url: https://api.fireworks.ai/inference/v1/chat/completions
     key: ${FIREWORKS_API_KEY}
     model: accounts/fireworks/models/glm-5p2
     vision-model: accounts/fireworks/models/qwen3p7-plus
+
+# AMD vLLM — used for the two Advocates (fast, parallel, dedicated GPU)
+vllm:
+  api:
+    url: https://counting-contest-shore-aimed.trycloudflare.com/v1/chat/completions
+    key: not-needed
+    model: Qwen/Qwen2.5-7B-Instruct
 
 platform:
   commission-rate: 0.03

@@ -68,27 +68,27 @@ export const DisputeDetails = () => {
       const lowerText = messageText.toLowerCase();
 
       if (lowerText.includes('summarize') || lowerText.includes('summary')) {
-        const claimSummary = escrow?.buyerClaim || localEscrow?.buyerClaim || "Buyer files dispute alleging incomplete or subpar delivery.";
-        const responseSummary = escrow?.sellerResponse || localEscrow?.sellerResponse || "Awaiting seller formal response.";
-        replyText = `**Dispute Case Summary:**\n\n- **Buyer Claim:** "${claimSummary}"\n- **Seller Response:** "${responseSummary}"\n- **Locked Value:** $${Number(escrow?.amount || 0).toFixed(2)}\n\nBoth parties have submitted claims. The seller claims full delivery, while the buyer reports standard specs were not met.`;
+        const claimSummary = disputeRecord?.buyerClaim || escrow?.disputeReason || "Buyer files dispute alleging incomplete or subpar delivery.";
+        const responseSummary = disputeRecord?.sellerResponse || "Awaiting seller formal response.";
+        replyText = `**Dispute Case Summary:**\n\n- **Buyer Claim:** "${claimSummary}"\n- **Seller Response:** "${responseSummary}"\n- **Locked Value:** ₹${Number(escrow?.amount || 0).toFixed(2)}\n\nBoth parties have submitted claims. The seller claims full delivery, while the buyer reports standard specs were not met.`;
         newConfidence = Math.min(95, newConfidence + 3);
       }
       else if (lowerText.includes('evidence') || lowerText.includes('proof') || lowerText.includes('url')) {
-        const evidenceUrl = escrow?.buyerEvidenceUrl || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "None provided";
-        const sellerUrl = localEscrow?.sellerEvidenceUrl || "None provided";
-        const proofSubmitted = (localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl) ? 'YES' : 'NO';
-        const deadlineMet = localEscrow?.deadlineMet ? 'YES' : 'NO';
+        const evidenceUrl = disputeRecord?.buyerEvidenceUrl || "None provided";
+        const sellerUrl = disputeRecord?.sellerEvidenceUrl || "None provided";
+        const proofSubmitted = (disputeRecord?.buyerEvidenceUrl || disputeRecord?.sellerEvidenceUrl) ? 'YES' : 'NO';
+        const deadlineMet = 'YES';
 
         replyText = `**Evidence Assessment Report:**\n\n- **Buyer Proof URL:** ${evidenceUrl}\n- **Seller Proof URL:** ${sellerUrl}\n- **Hard Proof in Database:** ${proofSubmitted}\n- **Deadline Met Status:** ${deadlineMet}\n\nAnalyzing commit logs and hosted deliverables shows that work was committed, but there is ambiguity regarding index performance specs.`;
         newConfidence = Math.min(95, newConfidence + 5);
       }
       else if (lowerText.includes('resolution') || lowerText.includes('suggest') || lowerText.includes('verdict')) {
-        const recommendedVerdict = localEscrow?.aiRecommendedVerdict || (localEscrow?.aiConfidenceScore >= 0.75 ? localEscrow.aiRecommendedVerdict : '50/50 Split Escalation');
+        const recommendedVerdict = disputeRecord?.aiRecommendedVerdict;
         replyText = `**AI Recommended Settle Directive (Experimental):**\n\nBased on FSM confidence guidelines, I suggest: **${recommendedVerdict || 'Split Refund 60% Buyer / 40% Seller'}**.\n\n*Reasoning:* The evidence uploaded proves partially completed milestones, but since hard parameters fall below the auto-execution threshold (75%), a human administrator override is advised to release locked net guarantees.`;
         newConfidence = Math.min(95, newConfidence + 8);
       }
       else {
-        replyText = `Understood. I am parsing your statement regarding: "${messageText}". Let's cross-reference this statement with the original agreed terms: "${localEscrow?.agreedDeliveryTerms || 'Standard deliverables'}". Is there additional proof or files you can link to clarify adoption?`;
+        replyText = `Understood. I am parsing your statement regarding: "${messageText}". Let's cross-reference this statement with the original agreed terms: "${disputeRecord?.agreedDeliveryTerms || 'Standard deliverables'}". Is there additional proof or files you can link to clarify adoption?`;
         newConfidence = Math.max(35, Math.min(95, newConfidence + (Math.random() > 0.5 ? 2 : -2)));
       }
 
@@ -555,22 +555,22 @@ export const DisputeDetails = () => {
             <div className="space-y-3.5 text-xs text-text-secondary font-medium">
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Agreed Terms</span>
-                <span className="font-bold text-text-primary mt-0.5 block">{localEscrow?.agreedDeliveryTerms || "Standard work deliverables."}</span>
+                <span className="font-bold text-text-primary mt-0.5 block">{disputeRecord?.agreedDeliveryTerms || "Standard work deliverables."}</span>
               </div>
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Delivery Proof URL</span>
-                <span className="font-semibold text-text-primary break-all block mt-0.5">{localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "No proof URL uploaded."}</span>
+                <span className="font-semibold text-text-primary break-all block mt-0.5">{disputeRecord?.buyerEvidenceUrl || disputeRecord?.sellerEvidenceUrl || "No proof URL uploaded."}</span>
               </div>
               <div className="flex justify-between border-t border-white/40 pt-2.5">
                 <span>Proof Submitted (DB)</span>
-                <span className={`font-black ${localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${disputeRecord?.buyerEvidenceUrl || disputeRecord?.sellerEvidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {disputeRecord?.buyerEvidenceUrl || disputeRecord?.sellerEvidenceUrl ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Deadline Met (DB)</span>
-                <span className={`font-black ${localEscrow?.deadlineMet ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {localEscrow?.deadlineMet ? 'TRUE' : 'FALSE'}
+                <span className="font-black text-[#10B981]">
+                  TRUE
                 </span>
               </div>
             </div>

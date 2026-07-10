@@ -30,7 +30,11 @@ export const Dashboard = () => {
   });
 
   // 2. Fetch Escrow List
-  const escrows = escrowService.getEscrowList(userEmail);
+  const { data: escrows = [], isLoading: isEscrowsLoading } = useQuery({
+    queryKey: ['escrows', userEmail],
+    queryFn: () => escrowService.getEscrowList(),
+    enabled: !!userEmail,
+  });
 
   // 3. Compute Metrics
   const balance = walletData?.balance || 0;

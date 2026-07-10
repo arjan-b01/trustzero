@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface EscrowRepository extends JpaRepository<EscrowTransaction, Long> {
@@ -14,4 +15,8 @@ public interface EscrowRepository extends JpaRepository<EscrowTransaction, Long>
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EscrowTransaction e WHERE e.id = :id")
     Optional<EscrowTransaction> findByIdWithLock(@Param("id") Long id);
+
+    List<EscrowTransaction> findByBuyerEmail(String email);
+
+    List<EscrowTransaction> findBySellerEmail(String email);
 }

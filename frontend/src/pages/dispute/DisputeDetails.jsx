@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import escrowService from '../../services/escrow.service';
 import disputeService from '../../services/dispute.service';
+import authService from '../../services/auth.service';
 import {
   Gavel,
   ArrowLeft,
@@ -108,28 +109,96 @@ export const DisputeDetails = () => {
     enabled: !!id && !!userEmail
   });
 
-  // 2. Fetch/Simulate Dispute Record Data
-  const escrows = escrowService.getEscrowList(userEmail);
-  const localEscrow = escrows.find(e => e.id === Number(id));
-
-  const hasArbitrationResult = localEscrow?.aiRecommendedVerdict || escrow?.status === 'RELEASED' || escrow?.status === 'REFUNDED';
-
-  // 3. Trigger Arbitration Mutation (Admin only)
-  const arbitrateMutation = useMutation({
-    mutationFn: () => disputeService.arbitrate(userEmail, id),
-    onMutate: () => {
-      setPipelineStep(1);
-    },
-    onSuccess: (data) => {
-      toast.success(data.autoExecuted ? 'AI arbitration resolved and auto-executed contract!' : 'AI recommended verdict and escalated to Admin.');
-      queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
-      setPipelineStep(4);
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.message || 'Arbitration trigger failed.');
-      setPipelineStep(0);
-    }
+  // 2. Fetch Dispute Record from database
+  const { data: disputeRecord, isLoading: isDisputeLoading, refetch: refetchDispute } = useQuery({
+    queryKey: ['dispute-record', id],
+    queryFn: () => escrowService.getDisputeRecord(id),
+    enabled: !!id && (escrow?.status === 'DISPUTED' || escrow?.status === 'RELEASED' || escrow?.status === 'REFUNDED'),
+    retry: false
   });
+
+  const [isArbitrating, setIsArbitrating] = useState(false);
+  const [streamBuyerArg, setStreamBuyerArg] = useState('');
+  const [streamSellerArg, setStreamSellerArg] = useState('');
+  const [streamReasoning, setStreamReasoning] = useState('');
+  const [streamVerdict, setStreamVerdict] = useState('');
+  const [streamConfidence, setStreamConfidence] = useState(0);
+  const [streamAutoExecuted, setStreamAutoExecuted] = useState(false);
+
+  const triggerArbitrationStream = () => {
+    setIsArbitrating(true);
+    setPipelineStep(1);
+    setStreamBuyerArg('');
+    setStreamSellerArg('');
+    setStreamReasoning('');
+    setStreamVerdict('');
+    setStreamConfidence(0);
+    setStreamAutoExecuted(false);
+
+    const token = authService.getToken();
+    const eventSource = new EventSource(`/api/escrow/${id}/arbitrate/stream?token=${token}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        console.log("Arbitration Stream Event:", parsed);
+
+        if (parsed.type === 'progress') {
+          toast.loading(parsed.message, { id: 'arb-stream-toast' });
+        } else if (parsed.type === 'agent_start') {
+          if (parsed.agent === 'evidence_analyst') {
+            setPipelineStep(1);
+          } else if (parsed.agent === 'buyer_advocate' || parsed.agent === 'seller_advocate') {
+            setPipelineStep(2);
+          } else if (parsed.agent === 'arbitrator') {
+            setPipelineStep(3);
+          }
+        } else if (parsed.type === 'agent_complete') {
+          if (parsed.agent === 'buyer_advocate') {
+            setStreamBuyerArg(parsed.message || parsed.data);
+          } else if (parsed.agent === 'seller_advocate') {
+            setStreamSellerArg(parsed.message || parsed.data);
+          }
+        } else if (parsed.type === 'verdict') {
+          // Verdict data
+          const vData = parsed.data;
+          setStreamVerdict(vData.verdict);
+          setStreamConfidence(vData.confidence);
+          setStreamReasoning(vData.reasoning);
+          setStreamAutoExecuted(vData.confidence >= 0.75);
+          setPipelineStep(4);
+
+          toast.success(`Verdict Generated: ${vData.verdict} (Confidence: ${(vData.confidence * 100).toFixed(0)}%)`, { id: 'arb-stream-toast' });
+
+          setTimeout(() => {
+            eventSource.close();
+            setIsArbitrating(false);
+            queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
+            queryClient.invalidateQueries({ queryKey: ['dispute-record', id] });
+            refetchDispute();
+          }, 3000);
+        } else if (parsed.type === 'error') {
+          toast.error(`Arbitration failed: ${parsed.message}`, { id: 'arb-stream-toast' });
+          eventSource.close();
+          setIsArbitrating(false);
+        }
+      } catch (err) {
+        console.error("SSE JSON parse error:", err);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.log("EventSource closed or disconnected.", err);
+      // Fallback clean up
+      setTimeout(() => {
+        eventSource.close();
+        setIsArbitrating(false);
+        queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
+        queryClient.invalidateQueries({ queryKey: ['dispute-record', id] });
+        refetchDispute();
+      }, 5000);
+    };
+  };
 
   if (isEscrowLoading) {
     return (
@@ -141,21 +210,23 @@ export const DisputeDetails = () => {
 
   const isAdmin = currentUser?.role === 'ADMIN';
 
-  // Get values from local storage cache
-  const aiBuyerArg = localEscrow?.aiBuyerArgument || "The Buyer Advocate AI will formulate arguments supporting a refund...";
-  const aiSellerArg = localEscrow?.aiSellerArgument || "The Seller Advocate AI will formulate arguments supporting payment release...";
-  const aiReasoning = localEscrow?.aiReasoning || "The Neutral Arbitrator AI will balance evidence and make a final ruling...";
-  const aiVerdict = localEscrow?.aiRecommendedVerdict || null;
-  const aiConfidence = localEscrow?.aiConfidenceScore || 0.00;
-  const autoExecuted = localEscrow?.autoExecuted || false;
+  // Get values from DB disputeRecord or fallback to local storage / stream state
+  const aiBuyerArg = streamBuyerArg || disputeRecord?.aiBuyerArgument || "The Buyer Advocate AI will formulate arguments supporting a refund...";
+  const aiSellerArg = streamSellerArg || disputeRecord?.aiSellerArgument || "The Seller Advocate AI will formulate arguments supporting payment release...";
+  const aiReasoning = streamReasoning || disputeRecord?.aiReasoning || "The Neutral Arbitrator AI will balance evidence and make a final ruling...";
+  const aiVerdict = streamVerdict || disputeRecord?.aiRecommendedVerdict || null;
+  const aiConfidence = streamConfidence || disputeRecord?.aiConfidenceScore || 0.00;
+  const autoExecuted = streamAutoExecuted || disputeRecord?.autoExecuted || false;
+
+  const hasArbitrationResult = !!aiVerdict || escrow?.status === 'RELEASED' || escrow?.status === 'REFUNDED';
 
   // Render Pipeline Status
   const getPipelineStatusText = () => {
-    if (arbitrateMutation.isPending) {
-      if (pipelineStep === 1) return "Buyer Advocate AI is generating refund arguments...";
-      if (pipelineStep === 2) return "Seller Advocate AI is generating delivery arguments...";
-      if (pipelineStep === 3) return "Neutral Arbitrator AI is evaluating claims...";
-      return "Running deterministic java confidence check...";
+    if (isArbitrating) {
+      if (pipelineStep === 1) return "Evidence Analyst AI is evaluating claims and visual evidence...";
+      if (pipelineStep === 2) return "Advocate AIs are formulating parallel claims...";
+      if (pipelineStep === 3) return "Neutral Arbitrator AI is resolving conflict...";
+      return "Running Spring FSM confidence checks...";
     }
     return "Arbitration pipeline ready.";
   };
@@ -282,16 +353,11 @@ export const DisputeDetails = () => {
 
                 {isAdmin ? (
                   <button
-                    onClick={() => {
-                      setTimeout(() => setPipelineStep(2), 1500);
-                      setTimeout(() => setPipelineStep(3), 3000);
-                      setTimeout(() => setPipelineStep(4), 4500);
-                      arbitrateMutation.mutate();
-                    }}
-                    disabled={arbitrateMutation.isPending}
+                    onClick={triggerArbitrationStream}
+                    disabled={isArbitrating}
                     className="btn-primary flex items-center space-x-2 px-5 py-2.5 text-sm font-semibold cursor-pointer disabled:opacity-50"
                   >
-                    {arbitrateMutation.isPending ? (
+                    {isArbitrating ? (
                       <Loader className="h-4 w-4 animate-spin" />
                     ) : (
                       <Cpu className="h-4 w-4" />
@@ -604,22 +670,22 @@ export const DisputeDetails = () => {
             <div className="space-y-3.5 text-xs text-text-secondary font-medium">
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Agreed Terms</span>
-                <span className="font-bold text-text-primary mt-0.5 block">{localEscrow?.agreedDeliveryTerms || "Standard work deliverables."}</span>
+                <span className="font-bold text-text-primary mt-0.5 block">{disputeRecord?.agreedDeliveryTerms || "Standard work deliverables."}</span>
               </div>
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Delivery Proof URL</span>
-                <span className="font-semibold text-text-primary break-all block mt-0.5">{localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "No proof URL uploaded."}</span>
+                <span className="font-semibold text-text-primary break-all block mt-0.5">{disputeRecord?.buyerEvidenceUrl || "No proof URL uploaded."}</span>
               </div>
               <div className="flex justify-between border-t border-white/40 pt-2.5">
                 <span>Proof Submitted (DB)</span>
-                <span className={`font-black ${localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${disputeRecord?.buyerEvidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {disputeRecord?.buyerEvidenceUrl ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Deadline Met (DB)</span>
-                <span className={`font-black ${localEscrow?.deadlineMet ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {localEscrow?.deadlineMet ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${escrow?.deadlineMet !== false ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {escrow?.deadlineMet !== false ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
             </div>

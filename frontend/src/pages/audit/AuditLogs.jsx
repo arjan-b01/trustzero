@@ -30,8 +30,12 @@ export const AuditLogs = () => {
     enabled: !!walletId
   });
 
-  // 3. Fetch all Escrows local list
-  const escrows = escrowService.getEscrowList(userEmail);
+  // 3. Fetch all Escrows
+  const { data: escrows = [], isLoading: isEscrowsLoading } = useQuery({
+    queryKey: ['escrows', userEmail],
+    queryFn: () => escrowService.getEscrowList(),
+    enabled: !!userEmail,
+  });
 
   // 4. Fetch Escrow audit logs in parallel using custom query logic
   const { data: combinedLogs, isLoading: isEscrowLogsLoading } = useQuery({
@@ -47,7 +51,7 @@ export const AuditLogs = () => {
       const results = await Promise.all(logsPromises);
       return results.flat();
     },
-    enabled: escrows.length > 0
+    enabled: escrows && escrows.length > 0
   });
 
   // 5. Merge and Sort Logs
@@ -72,7 +76,7 @@ export const AuditLogs = () => {
     return matchesSearch && matchesAction;
   });
 
-  const isLoading = isWalletLoading || isWalletLogsLoading || isEscrowLogsLoading;
+  const isLoading = isWalletLoading || isWalletLogsLoading || isEscrowLogsLoading || isEscrowsLoading;
 
   return (
     <div className="space-y-8">

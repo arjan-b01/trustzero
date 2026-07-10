@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import escrowService from '../../services/escrow.service';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, AlertTriangle, ArrowRight, Gavel } from 'lucide-react';
@@ -9,7 +10,11 @@ export const DisputeList = () => {
   const { currentUser } = useAuth();
   const userEmail = currentUser?.email || '';
 
-  const escrows = escrowService.getEscrowList(userEmail);
+  const { data: escrows = [], isLoading } = useQuery({
+    queryKey: ['escrows', userEmail],
+    queryFn: () => escrowService.getEscrowList(),
+    enabled: !!userEmail,
+  });
   const disputedEscrows = escrows.filter((e) => e.status === 'DISPUTED');
 
   const isAdmin = currentUser?.role === 'ADMIN';
@@ -27,7 +32,11 @@ export const DisputeList = () => {
         </p>
       </div>
 
-      {disputedEscrows.length === 0 ? (
+      {isLoading ? (
+        <div className="flex h-[30vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#8B5CF6] border-t-transparent"></div>
+        </div>
+      ) : disputedEscrows.length === 0 ? (
         <div className="glass-panel p-20 flex flex-col items-center justify-center text-center text-text-muted bg-white/40 shadow-xs border-white/60">
           <CheckCircleIcon className="h-16 w-16 text-[#10B981]/30 mb-4" />
           <h3 className="text-lg font-bold text-text-primary mb-1">Clear Ledger</h3>

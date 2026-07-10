@@ -263,4 +263,49 @@ public class EscrowService {
 
         return mapToResponse(tx);
     }
+
+    public java.util.List<EscrowResponse> getMyEscrows(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        java.util.List<EscrowTransaction> txs;
+        if (user.getRole() == UserRole.ADMIN) {
+            txs = escrowRepository.findAll();
+        } else if (user.getRole() == UserRole.SELLER) {
+            txs = escrowRepository.findBySellerEmail(userEmail);
+        } else {
+            txs = escrowRepository.findByBuyerEmail(userEmail);
+        }
+
+        return txs.stream()
+                .map(this::mapToResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public com.escrow.engine.dispute.dto.DisputeRecordResponse getDisputeByEscrowId(Long escrowId) {
+        com.escrow.engine.dispute.entity.DisputeRecord record = disputeRecordRepository.findByEscrowId(escrowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dispute record not found for escrow ID: " + escrowId));
+
+        return new com.escrow.engine.dispute.dto.DisputeRecordResponse(
+                record.getId(),
+                record.getEscrow().getId(),
+                record.getBuyerClaim(),
+                record.getSellerResponse(),
+                record.getAgreedDeliveryTerms(),
+                record.getBuyerEvidenceUrl(),
+                record.getSellerEvidenceUrl(),
+                record.getAiEvidenceStrength(),
+                record.getAiEvidenceSupports(),
+                record.getAiCaseClarity(),
+                record.getAiEvidenceAnalysis(),
+                record.getAiBuyerArgument(),
+                record.getAiSellerArgument(),
+                record.getAiReasoning(),
+                record.getAiConfidenceScore(),
+                record.getAiRecommendedVerdict(),
+                record.isAutoExecuted(),
+                record.getCreatedAt(),
+                record.getUpdatedAt()
+        );
+    }
 }

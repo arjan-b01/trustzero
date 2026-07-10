@@ -1,29 +1,26 @@
 import api from './api';
-import { updateLocalEscrowStatus } from '../utils/storage';
 
 const disputeService = {
-  // Trigger AI Arbitration (Admin only)
-  async arbitrate(userEmail, escrowId) {
-    const response = await api.post(`/escrow/${escrowId}/arbitrate`);
-    const data = response.data;
-    
-    const finalStatus = data.autoExecuted ? (data.verdict === 'RELEASE' ? 'RELEASED' : 'REFUNDED') : 'DISPUTED';
-    const disputeReason = data.autoExecuted 
-      ? `AI-RESOLVED: ${data.arbitratorReasoning}`
-      : `AI-ESCALATED: AI recommended ${data.verdict} (Confidence: ${data.confidenceScore})`;
-
-    // Sync AI arbitration results in local storage
-    updateLocalEscrowStatus(userEmail, escrowId, finalStatus, {
-      disputeReason: disputeReason,
-      aiRecommendedVerdict: data.verdict,
-      aiConfidenceScore: data.confidenceScore,
-      aiBuyerArgument: data.buyerArgument,
-      aiSellerArgument: data.sellerArgument,
-      aiReasoning: data.arbitratorReasoning,
-      autoExecuted: data.autoExecuted
+  // Upload evidence file to backend VLM analyzer
+  async uploadEvidence(escrowId, file, party, context = '') {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('party', party);
+    if (context) {
+      formData.append('context', context);
+    }
+    const response = await api.post(`/evidence/escrow/${escrowId}/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     });
-    
-    return data;
+    return response.data;
+  },
+
+  // Get evidence list for an escrow
+  async getEvidenceForEscrow(escrowId) {
+    const response = await api.get(`/evidence/escrow/${escrowId}`);
+    return response.data;
   }
 };
 

@@ -37,11 +37,12 @@ public class AuthService {
             throw new RuntimeException("Email already in use");
         }
 
+        UserRole userRole = request.role() != null ? request.role() : UserRole.BUYER;
         User user = User.builder()
                 .name(request.name())
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role((UserRole.BUYER))
+                .role(userRole)
                 .build();
         User savedUser = userRepository.save(user);
 

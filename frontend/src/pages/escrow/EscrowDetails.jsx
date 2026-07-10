@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import escrowService from '../../services/escrow.service';
 import auditService from '../../services/audit.service';
+import disputeService from '../../services/dispute.service';
 import {
   Scroll,
   ShieldAlert,
@@ -49,6 +50,55 @@ export const EscrowDetails = () => {
     queryFn: () => auditService.getEscrowHistory(id),
     enabled: !!id
   });
+
+  // Query Escrow Evidence records from backend
+  const { data: evidenceList = [], refetch: refetchEvidence } = useQuery({
+    queryKey: ['evidence-list', id],
+    queryFn: () => disputeService.getEvidenceForEscrow(id),
+    enabled: !!id
+  });
+
+  // Fetch Dispute Record details from database
+  const { data: disputeRecord } = useQuery({
+    queryKey: ['dispute-record', id],
+    queryFn: () => escrowService.getDisputeRecord(id),
+    enabled: !!id && (escrow?.status === 'DISPUTED' || escrow?.status === 'RELEASED' || escrow?.status === 'REFUNDED'),
+    retry: false
+  });
+
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+  const handleUploadEvidence = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("VLM analyzer only supports image files.");
+      return;
+    }
+
+    setUploadLoading(true);
+    const isBuyer = escrow?.buyerName === currentUser?.name;
+    const isSeller = escrow?.sellerName === currentUser?.name;
+    const party = isBuyer ? 'BUYER' : isSeller ? 'SELLER' : 'BUYER';
+    const context = `Evidence upload by ${currentUser?.name} for contract #${id}`;
+
+    toast.promise(
+      disputeService.uploadEvidence(id, file, party, context),
+      {
+        loading: 'Uploading evidence & running VLM analyzer...',
+        success: (data) => {
+          refetchEvidence();
+          setUploadLoading(false);
+          return `Analyzed! VLM: ${data.vlmAnalysis.substring(0, 55)}...`;
+        },
+        error: (err) => {
+          setUploadLoading(false);
+          return err.response?.data?.message || 'Failed to upload evidence.';
+        }
+      }
+    );
+  };
 
   // 3. Fund Escrow Mutation
   const fundMutation = useMutation({
@@ -275,6 +325,54 @@ export const EscrowDetails = () => {
                 </p>
               </div>
             )}
+
+            {/* Dispute details if present in DB */}
+            {disputeRecord && (
+              <div className="rounded-2xl border border-white/60 bg-white/30 p-5 space-y-4 shadow-2xs">
+                <span className="flex items-center text-xs font-bold text-[#EF4444]">
+                  <ShieldAlert className="h-4.5 w-4.5 mr-1.5" />
+                  Structured Dispute Case Files
+                </span>
+                <div className="grid gap-4 sm:grid-cols-2 text-xs font-medium text-text-secondary">
+                  <div className="bg-white/40 border border-white/60 rounded-xl p-3">
+                    <strong className="text-[10px] text-text-muted uppercase tracking-wider block mb-1">Buyer Claim</strong>
+                    <p className="font-semibold text-text-primary">{disputeRecord.buyerClaim}</p>
+                    <p className="text-[10px] text-text-muted mt-2">Agreed Terms: {disputeRecord.agreedDeliveryTerms}</p>
+                    {disputeRecord.buyerEvidenceUrl && (
+                      <p className="text-[10px] text-[#8B5CF6] mt-1 font-semibold truncate">
+                        Link: <a href={disputeRecord.buyerEvidenceUrl} target="_blank" rel="noreferrer" className="underline">{disputeRecord.buyerEvidenceUrl}</a>
+                      </p>
+                    )}
+                  </div>
+                  <div className="bg-white/40 border border-white/60 rounded-xl p-3">
+                    <strong className="text-[10px] text-text-muted uppercase tracking-wider block mb-1">Seller Defense</strong>
+                    <p className="font-semibold text-text-primary">{disputeRecord.sellerResponse || 'Awaiting formal response from the Seller...'}</p>
+                    {disputeRecord.sellerEvidenceUrl && (
+                      <p className="text-[10px] text-[#FF7EB6] mt-2 font-semibold truncate">
+                        Link: <a href={disputeRecord.sellerEvidenceUrl} target="_blank" rel="noreferrer" className="underline">{disputeRecord.sellerEvidenceUrl}</a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {disputeRecord.aiRecommendedVerdict && (
+                  <div className="bg-white/40 border border-white/60 rounded-xl p-4.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-[10px] text-[#D97706] uppercase tracking-wider">AI Recommended Verdict</strong>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${disputeRecord.autoExecuted ? 'bg-[#10B981]/15 text-[#059669]' : 'bg-[#FFC371]/15 text-[#D97706]'}`}>
+                        {disputeRecord.autoExecuted ? 'Auto-Executed' : 'Requires Override'}
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold text-text-primary text-gradient">
+                      {disputeRecord.aiRecommendedVerdict === 'RELEASE' ? 'Release funds to Seller' : 'Refund funds to Buyer'} (Confidence: {(disputeRecord.aiConfidenceScore * 100).toFixed(0)}%)
+                    </p>
+                    <p className="text-xs text-text-secondary leading-relaxed font-semibold">
+                      Reasoning: {disputeRecord.aiReasoning}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Action triggers */}
@@ -363,28 +461,92 @@ export const EscrowDetails = () => {
         </div>
 
         {/* Right Column (Audit Timeline logs) */}
-        <div className="glass-panel p-7 flex flex-col justify-between h-fit shadow-sm bg-white/40 border-white/60">
-          <div>
-            <h3 className="text-base font-bold text-text-primary mb-6 flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-[#8B5CF6]" />
-              <span>Contract History Timeline</span>
+        <div className="space-y-6">
+          <div className="glass-panel p-7 flex flex-col justify-between h-fit shadow-sm bg-white/40 border-white/60">
+            <div>
+              <h3 className="text-base font-bold text-text-primary mb-6 flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-[#8B5CF6]" />
+                <span>Contract History Timeline</span>
+              </h3>
+
+              {!auditLogs || auditLogs.length === 0 ? (
+                <div className="text-center py-12 text-text-muted text-xs">
+                  <p>No audit timeline logs registered for this escrow.</p>
+                </div>
+              ) : (
+                <div className="relative border-l border-white/80 pl-5 space-y-6 text-xs text-text-secondary">
+                  {auditLogs.map((log) => (
+                    <div key={log.id} className="relative">
+                      {/* Circle marker */}
+                      <span className="absolute -left-[25px] top-1.5 flex h-2 w-2 rounded-full bg-[#8B5CF6] shadow-sm"></span>
+                      <p className="font-bold text-text-primary">{log.action}</p>
+                      <p className="text-[9px] text-text-muted mt-0.5 uppercase tracking-wider font-semibold">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </p>
+                      <p className="mt-1 text-text-secondary leading-relaxed font-semibold">{log.details}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Visual Evidence (VLM Analyzer) Panel */}
+          <div className="glass-panel p-7 h-fit shadow-sm bg-white/40 border-white/60 space-y-6">
+            <h3 className="text-base font-bold text-text-primary flex items-center space-x-2 pb-4 border-b border-white/60">
+              <ShieldCheck className="h-5 w-5 text-[#10B981]" />
+              <span>Visual Evidence (VLM Analyzer)</span>
             </h3>
 
-            {!auditLogs || auditLogs.length === 0 ? (
-              <div className="text-center py-12 text-text-muted text-xs">
-                <p>No audit timeline logs registered for this escrow.</p>
+            {/* Upload Button */}
+            {(isBuyer || isSeller) && (escrow.status === 'FUNDED' || escrow.status === 'DISPUTED') && (
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-text-secondary">Upload Screen/Proof Image</label>
+                <div className="flex items-center justify-center border-2 border-dashed border-white/85 rounded-2xl p-4 bg-white/20 hover:bg-white/30 transition-all cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadEvidence}
+                    disabled={uploadLoading}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="text-center text-xs text-text-secondary font-semibold">
+                    {uploadLoading ? (
+                      <Loader className="h-5 w-5 animate-spin mx-auto text-[#8B5CF6]" />
+                    ) : (
+                      <span>Click to upload proof screenshot</span>
+                    )}
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* Evidence List */}
+            {evidenceList.length === 0 ? (
+              <p className="text-xs text-text-muted text-center font-medium">No visual evidence records found.</p>
             ) : (
-              <div className="relative border-l border-white/80 pl-5 space-y-6 text-xs text-text-secondary">
-                {auditLogs.map((log) => (
-                  <div key={log.id} className="relative">
-                    {/* Circle marker */}
-                    <span className="absolute -left-[25px] top-1.5 flex h-2 w-2 rounded-full bg-[#8B5CF6] shadow-sm"></span>
-                    <p className="font-bold text-text-primary">{log.action}</p>
-                    <p className="text-[9px] text-text-muted mt-0.5 uppercase tracking-wider font-semibold">
-                      {new Date(log.timestamp).toLocaleString()}
+              <div className="space-y-4">
+                {evidenceList.map((ev) => (
+                  <div key={ev.id} className="border border-white/60 bg-white/30 rounded-2xl p-3.5 text-xs space-y-2.5">
+                    <div className="flex items-center justify-between text-[10px] text-text-muted font-bold uppercase tracking-wider">
+                      <span className={ev.party === 'BUYER' ? 'text-[#8B5CF6]' : 'text-[#FF7EB6]'}>
+                        {ev.party}: {ev.fileName}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-full ${ev.analysisStatus === 'ANALYZED' ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/20' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20'}`}>
+                        {ev.analysisStatus}
+                      </span>
+                    </div>
+                    
+                    {/* Image Preview */}
+                    <img 
+                      src={ev.fileUrl} 
+                      alt={ev.fileName} 
+                      className="w-full h-32 object-cover rounded-xl border border-white/50"
+                    />
+                    
+                    <p className="text-[10px] text-text-secondary font-semibold leading-relaxed bg-white/40 p-2.5 rounded-xl border border-white/60">
+                      <strong>VLM Summary:</strong> {ev.vlmAnalysis}
                     </p>
-                    <p className="mt-1 text-text-secondary leading-relaxed font-semibold">{log.details}</p>
                   </div>
                 ))}
               </div>

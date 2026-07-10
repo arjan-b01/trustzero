@@ -76,4 +76,14 @@ public class EscrowController {
         EscrowResponse response = escrowService.submitSellerResponse(principal.getName(), id, request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping
+    public ResponseEntity<java.util.List<EscrowResponse>> getMyEscrows(Principal principal) {
+        return ResponseEntity.ok(escrowService.getMyEscrows(principal.getName()));
+    }
+
+    @GetMapping("/{id}/dispute")
+    public ResponseEntity<com.escrow.engine.dispute.dto.DisputeRecordResponse> getDisputeRecord(@PathVariable Long id) {
+        return ResponseEntity.ok(escrowService.getDisputeByEscrowId(id));
+    }
 }

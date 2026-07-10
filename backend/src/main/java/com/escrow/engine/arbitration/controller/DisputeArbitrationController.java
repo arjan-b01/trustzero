@@ -19,7 +19,7 @@ public class DisputeArbitrationController {
 
     private final DisputeArbitrationService arbitrationService;
 
-    @PostMapping(value = "/{escrowId}/arbitrate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequestMapping(value = "/{escrowId}/arbitrate/stream", method = {RequestMethod.GET, RequestMethod.POST}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public Flux<ArbitrationEvent> arbitrateStream(
             @PathVariable Long escrowId,

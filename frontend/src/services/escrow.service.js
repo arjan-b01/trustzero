@@ -96,9 +96,16 @@ const escrowService = {
     return response.data;
   },
 
-  // Get all escrows for active user (hybrid from local storage)
-  getEscrowList() {
-    return getLocalEscrows();
+  // Get Dispute Record details
+  async getDisputeRecord(escrowId) {
+    const response = await api.get(`/escrow/${escrowId}/dispute`);
+    return response.data;
+  },
+
+  // Get all escrows for active user (from database)
+  async getEscrowList() {
+    const response = await api.get('/escrow');
+    return response.data;
   }
 };
 

@@ -52,9 +52,9 @@ export const Dashboard = () => {
 
   // Cards configurations
   const stats = [
-    { name: 'Wallet Balance', value: `$${Number(balance).toFixed(2)}`, icon: Wallet, color: 'text-[#8B5CF6] bg-[#8B5CF6]/10' },
-    { name: 'Money Locked', value: `$${moneyLocked.toFixed(2)}`, icon: Lock, color: 'text-[#FFC371] bg-[#FFC371]/15' },
-    { name: 'Money Released', value: `$${moneyReleased.toFixed(2)}`, icon: CheckCircle, color: 'text-[#10B981] bg-[#10B981]/10' },
+    { name: 'Wallet Balance', value: `₹${Number(balance).toFixed(2)}`, icon: Wallet, color: 'text-[#8B5CF6] bg-[#8B5CF6]/10' },
+    { name: 'Money Locked', value: `₹${moneyLocked.toFixed(2)}`, icon: Lock, color: 'text-[#FFC371] bg-[#FFC371]/15' },
+    { name: 'Money Released', value: `₹${moneyReleased.toFixed(2)}`, icon: CheckCircle, color: 'text-[#10B981] bg-[#10B981]/10' },
     { name: 'Active Escrows', value: activeEscrows.length, icon: Activity, color: 'text-[#60A5FA] bg-[#60A5FA]/10' },
     { name: 'Pending Disputes', value: pendingDisputes.length, icon: AlertTriangle, color: 'text-[#EF4444] bg-[#EF4444]/10' },
     { name: 'Completed Escrows', value: completedEscrows.length, icon: CheckCircle, color: 'text-[#10B981] bg-[#10B981]/10' },
@@ -82,13 +82,15 @@ export const Dashboard = () => {
             <Wallet className="h-4 w-4" />
             <span>Deposit</span>
           </Link>
-          <Link
-            to="/escrows/create"
-            className="btn-primary flex items-center space-x-2 px-5 py-2.5 text-sm font-semibold cursor-pointer"
-          >
-            <PlusCircle className="h-4 w-4" />
-            <span>Create Escrow</span>
-          </Link>
+          {currentUser?.role === 'BUYER' && (
+            <Link
+              to="/escrows/create"
+              className="btn-primary flex items-center space-x-2 px-5 py-2.5 text-sm font-semibold cursor-pointer"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>Create Escrow</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -158,7 +160,7 @@ export const Dashboard = () => {
                             {isUserBuyer ? 'BUYER' : 'SELLER'}
                           </span>
                         </td>
-                        <td className="p-4 font-bold text-text-primary">${Number(escrow.amount).toFixed(2)}</td>
+                        <td className="p-4 font-bold text-text-primary">₹{Number(escrow.amount).toFixed(2)}</td>
                         <td className="p-4">
                           <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
                             escrow.status === 'RELEASED' ? 'bg-[#10B981]/15 text-[#059669]' :

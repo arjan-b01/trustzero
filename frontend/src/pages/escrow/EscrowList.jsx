@@ -49,13 +49,15 @@ export const EscrowList = () => {
           </p>
         </div>
 
-        <Link
-          to="/escrows/create"
-          className="btn-primary flex items-center space-x-2 px-5 py-3 text-sm font-semibold cursor-pointer shadow-md"
-        >
-          <Plus className="h-4.5 w-4.5" />
-          <span>New Escrow</span>
-        </Link>
+        {currentUser?.role === 'BUYER' && (
+          <Link
+            to="/escrows/create"
+            className="btn-primary flex items-center space-x-2 px-5 py-3 text-sm font-semibold cursor-pointer shadow-md"
+          >
+            <Plus className="h-4.5 w-4.5" />
+            <span>New Escrow</span>
+          </Link>
+        )}
       </div>
 
       {/* Filter and Search Panel */}
@@ -76,19 +78,7 @@ export const EscrowList = () => {
 
         {/* Filter inputs dropdowns */}
         <div className="flex flex-wrap gap-4 items-center">
-          {/* Role Filter */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-text-muted" />
-            <select
-              className="glass-input px-3.5 py-2 text-xs font-semibold border-white/80 cursor-pointer"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
-              <option value="ALL">All Roles</option>
-              <option value="BUYER">As Buyer</option>
-              <option value="SELLER">As Seller</option>
-            </select>
-          </div>
+
 
           {/* Status Filter */}
           <select
@@ -160,7 +150,7 @@ export const EscrowList = () => {
                 <div className="border-t border-white/60 pt-4 mt-2 flex items-center justify-between">
                   <div>
                     <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider">Locked Funds</p>
-                    <p className="text-lg font-black text-text-primary leading-tight">${Number(escrow.amount).toFixed(2)}</p>
+                    <p className="text-lg font-black text-text-primary leading-tight">₹{Number(escrow.amount).toFixed(2)}</p>
                   </div>
 
                   <Link

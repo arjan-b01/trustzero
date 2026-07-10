@@ -55,7 +55,7 @@ export const DisputeDetails = () => {
       text: messageText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-    
+
     setChatMessages(prev => [...prev, userMsg]);
     setChatInput('');
     setChatLoading(true);
@@ -72,7 +72,7 @@ export const DisputeDetails = () => {
         const responseSummary = escrow?.sellerResponse || localEscrow?.sellerResponse || "Awaiting seller formal response.";
         replyText = `**Dispute Case Summary:**\n\n- **Buyer Claim:** "${claimSummary}"\n- **Seller Response:** "${responseSummary}"\n- **Locked Value:** $${Number(escrow?.amount || 0).toFixed(2)}\n\nBoth parties have submitted claims. The seller claims full delivery, while the buyer reports standard specs were not met.`;
         newConfidence = Math.min(95, newConfidence + 3);
-      } 
+      }
       else if (lowerText.includes('evidence') || lowerText.includes('proof') || lowerText.includes('url')) {
         const evidenceUrl = escrow?.buyerEvidenceUrl || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "None provided";
         const sellerUrl = localEscrow?.sellerEvidenceUrl || "None provided";
@@ -81,12 +81,12 @@ export const DisputeDetails = () => {
 
         replyText = `**Evidence Assessment Report:**\n\n- **Buyer Proof URL:** ${evidenceUrl}\n- **Seller Proof URL:** ${sellerUrl}\n- **Hard Proof in Database:** ${proofSubmitted}\n- **Deadline Met Status:** ${deadlineMet}\n\nAnalyzing commit logs and hosted deliverables shows that work was committed, but there is ambiguity regarding index performance specs.`;
         newConfidence = Math.min(95, newConfidence + 5);
-      } 
+      }
       else if (lowerText.includes('resolution') || lowerText.includes('suggest') || lowerText.includes('verdict')) {
         const recommendedVerdict = localEscrow?.aiRecommendedVerdict || (localEscrow?.aiConfidenceScore >= 0.75 ? localEscrow.aiRecommendedVerdict : '50/50 Split Escalation');
         replyText = `**AI Recommended Settle Directive (Experimental):**\n\nBased on FSM confidence guidelines, I suggest: **${recommendedVerdict || 'Split Refund 60% Buyer / 40% Seller'}**.\n\n*Reasoning:* The evidence uploaded proves partially completed milestones, but since hard parameters fall below the auto-execution threshold (75%), a human administrator override is advised to release locked net guarantees.`;
         newConfidence = Math.min(95, newConfidence + 8);
-      } 
+      }
       else {
         replyText = `Understood. I am parsing your statement regarding: "${messageText}". Let's cross-reference this statement with the original agreed terms: "${localEscrow?.agreedDeliveryTerms || 'Standard deliverables'}". Is there additional proof or files you can link to clarify adoption?`;
         newConfidence = Math.max(35, Math.min(95, newConfidence + (Math.random() > 0.5 ? 2 : -2)));
@@ -259,7 +259,7 @@ export const DisputeDetails = () => {
           {/* Visualizing Flow flowchart */}
           <div className="glass-panel p-6.5 relative overflow-hidden bg-white/40 border-white/60 shadow-sm">
             <div className="absolute top-0 right-0 -mr-6 -mt-6 h-24 w-24 rounded-full bg-[#8B5CF6]/10 blur-xl"></div>
-            
+
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-6 flex items-center space-x-1.5">
               <Cpu className="h-4 w-4 text-[#8B5CF6]" />
               <span>Multi-Agent Arbitration Flow</span>
@@ -268,13 +268,12 @@ export const DisputeDetails = () => {
             {/* Flowchart Layout */}
             <div className="flex flex-col md:flex-row md:items-center justify-around gap-6 relative">
               {/* Buyer Advocate */}
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${
-                  hasArbitrationResult 
-                    ? 'border-[#8B5CF6] bg-white/80 text-text-primary shadow-sm' 
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
+                    ? 'border-[#8B5CF6] bg-white/80 text-text-primary shadow-sm'
                     : 'border-white/70 text-text-muted bg-white/30'
-                }`}
+                  }`}
               >
                 <div className="h-10 w-10 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 flex items-center justify-center mb-2.5">
                   <BrainCircuit className="h-5 w-5" />
@@ -286,13 +285,12 @@ export const DisputeDetails = () => {
               <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
 
               {/* Seller Advocate */}
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${
-                  hasArbitrationResult 
-                    ? 'border-[#FF7EB6] bg-white/80 text-text-primary shadow-sm' 
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
+                    ? 'border-[#FF7EB6] bg-white/80 text-text-primary shadow-sm'
                     : 'border-white/70 text-text-muted bg-white/30'
-                }`}
+                  }`}
               >
                 <div className="h-10 w-10 rounded-full bg-[#FF7EB6]/10 text-[#FF7EB6] border border-[#FF7EB6]/20 flex items-center justify-center mb-2.5">
                   <BrainCircuit className="h-5 w-5" />
@@ -304,13 +302,12 @@ export const DisputeDetails = () => {
               <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
 
               {/* Neutral Arbitrator */}
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${
-                  hasArbitrationResult 
-                    ? 'border-[#FFC371] bg-white/80 text-text-primary shadow-sm' 
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
+                    ? 'border-[#FFC371] bg-white/80 text-text-primary shadow-sm'
                     : 'border-white/70 text-text-muted bg-white/30'
-                }`}
+                  }`}
               >
                 <div className="h-10 w-10 rounded-full bg-[#FFC371]/15 text-[#D97706] border border-[#FFC371]/25 flex items-center justify-center mb-2.5">
                   <Gavel className="h-5 w-5" />
@@ -322,13 +319,12 @@ export const DisputeDetails = () => {
               <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
 
               {/* Confidence check */}
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${
-                  hasArbitrationResult 
-                    ? 'border-[#10B981] bg-white/80 text-text-primary shadow-sm' 
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
+                    ? 'border-[#10B981] bg-white/80 text-text-primary shadow-sm'
                     : 'border-white/70 text-text-muted bg-white/30'
-                }`}
+                  }`}
               >
                 <div className="h-10 w-10 rounded-full bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 flex items-center justify-center mb-2.5">
                   <Award className="h-5 w-5" />
@@ -380,31 +376,28 @@ export const DisputeDetails = () => {
               <div className="flex border-b border-white/60 bg-white/30 text-xs">
                 <button
                   onClick={() => setActiveAgentTab('buyer')}
-                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${
-                    activeAgentTab === 'buyer'
+                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${activeAgentTab === 'buyer'
                       ? 'border-[#8B5CF6] text-[#8B5CF6] bg-[#8B5CF6]/5'
                       : 'border-transparent text-text-secondary hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   Buyer Advocate Agent
                 </button>
                 <button
                   onClick={() => setActiveAgentTab('seller')}
-                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${
-                    activeAgentTab === 'seller'
+                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${activeAgentTab === 'seller'
                       ? 'border-[#FF7EB6] text-[#FF7EB6] bg-[#FF7EB6]/5'
                       : 'border-transparent text-text-secondary hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   Seller Advocate Agent
                 </button>
                 <button
                   onClick={() => setActiveAgentTab('arbitrator')}
-                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${
-                    activeAgentTab === 'arbitrator'
+                  className={`flex-1 py-3.5 font-semibold transition-all border-b-2 text-center cursor-pointer ${activeAgentTab === 'arbitrator'
                       ? 'border-[#FFC371] text-[#D97706] bg-[#FFC371]/10'
                       : 'border-transparent text-text-secondary hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   Arbitrator Agent Verdict
                 </button>
@@ -463,9 +456,8 @@ export const DisputeDetails = () => {
                           <span>Arbitrator Evaluation & Reasoning</span>
                         </h4>
 
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          aiVerdict === 'RELEASE' ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/30' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/30'
-                        }`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${aiVerdict === 'RELEASE' ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/30' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/30'
+                          }`}>
                           Verdict: {aiVerdict || 'REFUND'}
                         </span>
                       </div>
@@ -480,111 +472,7 @@ export const DisputeDetails = () => {
             </div>
           )}
 
-          {/* Live AI Arbitration Mediator (Experimental) */}
-          <div className="glass-panel p-6 shadow-sm space-y-4 bg-white/40 dark:bg-[#13111C]/45 border-white/60 dark:border-white/10 mt-8">
-            <div className="flex items-center justify-between border-b border-text-muted/10 pb-4">
-              <div className="flex items-center space-x-2">
-                <BrainCircuit className="h-5 w-5 text-[#8B5CF6]" />
-                <h3 className="text-base font-bold text-text-primary">Live AI Arbitration Mediator</h3>
-              </div>
-              <span className="inline-flex rounded-full bg-[#FF7EB6]/20 text-[#FF7EB6] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border border-[#FF7EB6]/30 animate-pulse animate-duration-3000">
-                Experimental
-              </span>
-            </div>
 
-            {/* Confidence Meter */}
-            <div className="bg-white/30 dark:bg-black/10 rounded-2xl p-3 border border-white/50 dark:border-white/5 flex items-center justify-between gap-4">
-              <div className="text-xs font-semibold text-text-secondary">
-                <span>Mediator Confidence Rating: </span>
-                <span className={`font-black ml-1 ${
-                  mediatorConfidence >= 75 ? 'text-[#10B981]' : 'text-[#D97706]'
-                }`}>
-                  {mediatorConfidence}%
-                </span>
-              </div>
-              <div className="flex-1 max-w-[200px] h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    mediatorConfidence >= 75 ? 'bg-[#10B981]' : 'bg-[#D97706]'
-                  }`}
-                  style={{ width: `${mediatorConfidence}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Chat Messages Log */}
-            <div className="h-[240px] overflow-y-auto border border-text-muted/10 rounded-2xl p-4 bg-white/20 dark:bg-black/20 space-y-3 scrollbar-thin">
-              {chatMessages.map((msg, idx) => (
-                <div 
-                  key={idx} 
-                  className={`flex flex-col max-w-[85%] ${
-                    msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'
-                  }`}
-                >
-                  <div className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                    msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white rounded-tr-none'
-                      : 'bg-white dark:bg-[#1E1B29] text-text-primary border border-white/60 dark:border-white/5 rounded-tl-none shadow-2xs'
-                  }`}>
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
-                  </div>
-                  <span className="text-[9px] text-text-muted mt-1 px-1 font-semibold">{msg.time}</span>
-                </div>
-              ))}
-              {chatLoading && (
-                <div className="flex items-center space-x-2 text-text-secondary text-xs mr-auto bg-white dark:bg-[#1E1B29] p-3 rounded-2xl rounded-tl-none border border-white/60 dark:border-white/5 shadow-2xs">
-                  <Loader className="h-4 w-4 animate-spin text-[#8B5CF6]" />
-                  <span>Mediator AI is assessing...</span>
-                </div>
-              )}
-            </div>
-
-            {/* suggestion pills */}
-            <div className="flex flex-wrap gap-2 text-[10px]">
-              <button 
-                onClick={() => handleSendMessage("Summarize the dispute claim")}
-                className="px-3 py-1.5 rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/5 hover:bg-[#8B5CF6]/10 text-[#8B5CF6] transition-all cursor-pointer font-bold select-none bg-transparent"
-              >
-                📋 Summarize Dispute
-              </button>
-              <button 
-                onClick={() => handleSendMessage("Analyze the evidence context")}
-                className="px-3 py-1.5 rounded-full border border-[#FF7EB6]/30 bg-[#FF7EB6]/5 hover:bg-[#FF7EB6]/10 text-[#FF7EB6] transition-all cursor-pointer font-bold select-none bg-transparent"
-              >
-                🔍 Analyze Evidence
-              </button>
-              <button 
-                onClick={() => handleSendMessage("Suggest a fair resolution")}
-                className="px-3 py-1.5 rounded-full border border-[#FFC371]/40 bg-[#FFC371]/10 hover:bg-[#FFC371]/15 text-[#D97706] transition-all cursor-pointer font-bold select-none bg-transparent"
-              >
-                ⚖️ Suggest Resolution
-              </button>
-            </div>
-
-            {/* Input Bar */}
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage(chatInput);
-              }}
-              className="flex gap-2"
-            >
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a message to the AI Mediator..."
-                className="flex-1 glass-input p-3 text-xs focus:outline-none transition-all"
-              />
-              <button
-                type="submit"
-                disabled={chatLoading}
-                className="flex items-center justify-center rounded-xl bg-[#8B5CF6] hover:bg-[#7C3AED] text-white px-4 cursor-pointer disabled:opacity-50 font-semibold text-xs border-none"
-              >
-                Send
-              </button>
-            </form>
-          </div>
         </div>
 
         {/* Right Side: Java Confidence Checks details & Escrow details */}
@@ -606,12 +494,10 @@ export const DisputeDetails = () => {
               <div className="flex flex-col items-center justify-center text-center">
                 <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-white/80 bg-white/40 shadow-sm">
                   {/* Glowing glow */}
-                  <span className={`absolute inset-0 rounded-full blur-sm opacity-25 ${
-                    aiConfidence >= 0.75 ? 'bg-[#10B981]' : 'bg-[#FFC371]'
-                  }`} />
-                  <span className={`text-2xl font-black ${
-                    aiConfidence >= 0.75 ? 'text-[#10B981]' : 'text-[#D97706]'
-                  }`}>
+                  <span className={`absolute inset-0 rounded-full blur-sm opacity-25 ${aiConfidence >= 0.75 ? 'bg-[#10B981]' : 'bg-[#FFC371]'
+                    }`} />
+                  <span className={`text-2xl font-black ${aiConfidence >= 0.75 ? 'text-[#10B981]' : 'text-[#D97706]'
+                    }`}>
                     {(aiConfidence * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -620,11 +506,10 @@ export const DisputeDetails = () => {
               </div>
 
               {/* Engine Status (Auto executed vs escalated) */}
-              <div className={`rounded-2xl border p-4.5 text-xs ${
-                autoExecuted
+              <div className={`rounded-2xl border p-4.5 text-xs ${autoExecuted
                   ? 'bg-[#10B981]/5 border-[#10B981]/20 text-[#065F46]'
                   : 'bg-[#FFC371]/10 border-[#FFC371]/30 text-[#92400E]'
-              }`}>
+                }`}>
                 <p className="font-bold flex items-center space-x-1.5">
                   {autoExecuted ? (
                     <>
@@ -670,22 +555,22 @@ export const DisputeDetails = () => {
             <div className="space-y-3.5 text-xs text-text-secondary font-medium">
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Agreed Terms</span>
-                <span className="font-bold text-text-primary mt-0.5 block">{disputeRecord?.agreedDeliveryTerms || "Standard work deliverables."}</span>
+                <span className="font-bold text-text-primary mt-0.5 block">{localEscrow?.agreedDeliveryTerms || "Standard work deliverables."}</span>
               </div>
               <div>
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider block">Delivery Proof URL</span>
-                <span className="font-semibold text-text-primary break-all block mt-0.5">{disputeRecord?.buyerEvidenceUrl || "No proof URL uploaded."}</span>
+                <span className="font-semibold text-text-primary break-all block mt-0.5">{localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl || "No proof URL uploaded."}</span>
               </div>
               <div className="flex justify-between border-t border-white/40 pt-2.5">
                 <span>Proof Submitted (DB)</span>
-                <span className={`font-black ${disputeRecord?.buyerEvidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {disputeRecord?.buyerEvidenceUrl ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {localEscrow?.deliveryProofSubmitted || localEscrow?.buyerEvidenceUrl || localEscrow?.evidenceUrl ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Deadline Met (DB)</span>
-                <span className={`font-black ${escrow?.deadlineMet !== false ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
-                  {escrow?.deadlineMet !== false ? 'TRUE' : 'FALSE'}
+                <span className={`font-black ${localEscrow?.deadlineMet ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {localEscrow?.deadlineMet ? 'TRUE' : 'FALSE'}
                 </span>
               </div>
             </div>

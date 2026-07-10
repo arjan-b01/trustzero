@@ -287,15 +287,15 @@ export const EscrowDetails = () => {
             <div className="grid gap-4 sm:grid-cols-3 border-t border-white/60 pt-6">
               <div>
                 <span className="text-xs text-text-secondary font-medium block">Total Value</span>
-                <span className="text-xl font-bold text-text-primary">${Number(escrow.amount).toFixed(2)}</span>
+                <span className="text-xl font-bold text-text-primary">₹{Number(escrow.amount).toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-xs text-text-secondary font-medium block">Commission (3%)</span>
-                <span className="text-xl font-bold text-[#D97706]">${Number(escrow.platformFee || 0).toFixed(2)}</span>
+                <span className="text-xl font-bold text-[#D97706]">₹{Number(escrow.platformFee || 0).toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-xs text-text-secondary font-medium block">Locked Net Guarantee</span>
-                <span className="text-xl font-bold text-[#10B981]">${Number(escrow.lockedAmount || 0).toFixed(2)}</span>
+                <span className="text-xl font-bold text-[#10B981]">₹{Number(escrow.lockedAmount || 0).toFixed(2)}</span>
               </div>
             </div>
 

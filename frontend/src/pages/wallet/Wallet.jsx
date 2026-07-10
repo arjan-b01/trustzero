@@ -114,7 +114,7 @@ export const Wallet = () => {
             </div>
             <div className="mt-8 z-10 relative">
               <h2 className="text-[40px] font-black tracking-tight leading-none">
-                {isWalletLoading ? '...' : `$${Number(walletData?.balance || 0).toFixed(2)}`}
+                {isWalletLoading ? '...' : `₹${Number(walletData?.balance || 0).toFixed(2)}`}
               </h2>
               <p className="mt-4 text-[10px] uppercase font-bold tracking-widest opacity-75">
                 Wallet ID: {isWalletLoading ? '...' : walletId || 'Not assigned'}
@@ -132,11 +132,11 @@ export const Wallet = () => {
             <form onSubmit={handleSubmit(onDeposit)} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-text-secondary mb-1">
-                  Amount (USD)
+                  Amount (INR)
                 </label>
                 <div className="relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                    <span className="text-text-muted text-sm font-semibold">$</span>
+                    <span className="text-text-muted text-sm font-semibold">₹</span>
                   </div>
                   <input
                     type="number"
@@ -147,7 +147,7 @@ export const Wallet = () => {
                     placeholder="100.00"
                     {...register('amount', {
                       required: 'Deposit amount is required',
-                      min: { value: 1, message: 'Minimum deposit is $1.00' }
+                      min: { value: 1, message: 'Minimum deposit is ₹1.00' }
                     })}
                   />
                 </div>
@@ -219,9 +219,9 @@ export const Wallet = () => {
                           </span>
                         </td>
                         <td className="p-4 font-bold text-text-primary">
-                          {isCredit ? '+' : '-'}${difference.toFixed(2)}
+                          {isCredit ? '+' : '-'}₹{difference.toFixed(2)}
                           <div className="text-[9px] text-text-muted font-bold mt-0.5 uppercase tracking-wider">
-                            Bal: ${Number(log.newBalance).toFixed(2)}
+                            Bal: ₹{Number(log.newBalance).toFixed(2)}
                           </div>
                         </td>
                         <td className="p-4 max-w-[180px] truncate text-xs font-medium" title={log.details}>

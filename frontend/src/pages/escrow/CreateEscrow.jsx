@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import escrowService from '../../services/escrow.service';
-import { FilePlus2, UserPlus, DollarSign, FileText, Sparkles, ShieldCheck } from 'lucide-react';
+import { FilePlus2, UserPlus, IndianRupee, FileText, Sparkles, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -127,11 +127,11 @@ export const CreateEscrow = () => {
             {/* Amount Field */}
             <div>
               <label className="block text-xs font-semibold text-text-secondary mb-1">
-                Contract Amount (USD)
+                Contract Amount (INR)
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                  <DollarSign className="h-4.5 w-4.5 text-text-muted" />
+                  <IndianRupee className="h-4.5 w-4.5 text-text-muted" />
                 </div>
                 <input
                   type="number"
@@ -142,7 +142,7 @@ export const CreateEscrow = () => {
                   placeholder="500.00"
                   {...register('amount', {
                     required: 'Contract amount is required',
-                    min: { value: 1, message: 'Minimum contract is $1.00' }
+                    min: { value: 1, message: 'Minimum contract is ₹1.00' }
                   })}
                 />
               </div>
@@ -159,14 +159,14 @@ export const CreateEscrow = () => {
             >
               <div className="flex justify-between text-text-secondary font-medium">
                 <span>Contract Value</span>
-                <span className="font-bold text-text-primary">${Number(amountWatch).toFixed(2)}</span>
+                <span className="font-bold text-text-primary">₹{Number(amountWatch).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-[#D97706] font-semibold">
                 <span className="flex items-center">
                   <Sparkles className="h-4 w-4 mr-1 text-[#FFC371]" />
                   Platform Commission (3%)
                 </span>
-                <span>-${commission}</span>
+                <span>-₹{commission}</span>
               </div>
               <div className="h-[1px] bg-white/60 my-2"></div>
               <div className="flex justify-between font-bold text-text-primary text-sm">
@@ -174,7 +174,7 @@ export const CreateEscrow = () => {
                   <ShieldCheck className="h-4.5 w-4.5 mr-1 text-[#10B981]" />
                   Locked in Escrow (to Release/Refund)
                 </span>
-                <span className="text-[#10B981] font-black">${lockedAmount}</span>
+                <span className="text-[#10B981] font-black">₹{lockedAmount}</span>
               </div>
             </motion.div>
           )}

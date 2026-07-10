@@ -97,19 +97,15 @@ public class VisionAnalyzer {
 
     private String buildPrompt(String context) {
         return """
-            You are analyzing evidence for an escrow dispute resolution system.
-
-            Context about the dispute:
-            %s
-
-            Analyze this image and describe:
-            1. What the image shows (be specific and factual)
-            2. Whether it appears to be proof of delivery, product condition,
-               communication, payment, or something else
-            3. Any visible dates, tracking numbers, or identifying information
-            4. Whether the image appears authentic or potentially manipulated
-
-            Be objective. Do not make legal judgments — just describe what you see.
-            """.formatted(context != null ? context : "No additional context provided.");
+        Analyze this image for an escrow dispute.
+        Context: %s
+        
+        Respond with ONLY this format (no preamble, no reasoning, no "I will analyze"):
+        
+        SUBJECT: [what the image shows in one sentence]
+        CONDITION: [state of objects — damaged, new, used, etc.]
+        DETAILS: [any visible dates, tracking numbers, labels, or text — or "none visible"]
+        AUTHENTICITY: [authentic / possibly manipulated / unclear — one word + brief reason]
+        """.formatted(context != null ? context : "No additional context provided.");
     }
 }

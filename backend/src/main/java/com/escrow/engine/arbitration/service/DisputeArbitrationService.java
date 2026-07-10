@@ -99,9 +99,50 @@ public class DisputeArbitrationService {
     If evidence URLs failed to fetch or are images you cannot analyze, set
     evidenceStrength to NONE or WEAK depending on whether text evidence exists.
     """;
-    private static final String BUYER_ADVOCATE_SYSTEM = "You are the Buyer Advocate. Argue why funds should be REFUNDED to the buyer based on the dispute details and the Evidence Analyst's report. Return plain text only.";
-    private static final String SELLER_ADVOCATE_SYSTEM = "You are the Seller Advocate. Argue why funds should be RELEASED to the seller based on the dispute details and the Evidence Analyst's report. Return plain text only.";
-    private static final String ARBITRATOR_SYSTEM = "You are a neutral Arbitrator. Evaluate the dispute, the evidence report, and both advocate arguments. Output ONLY valid JSON: { \"verdict\": \"RELEASE\"|\"REFUND\", \"reasoning\": \"explanation\" }";
+    private static final String BUYER_ADVOCATE_SYSTEM = """
+    You are the Buyer Advocate in an escrow dispute.
+    Argue why funds should be REFUNDED to the buyer.
+    
+    Rules:
+    - Be concise (max 150 words)
+    - Cite specific evidence from the dispute context
+    - Do NOT introduce yourself or explain what you're doing
+    - Do NOT use phrases like "As the Buyer Advocate" or "I will argue"
+    - Start directly with your argument
+    
+    Output format: plain text, no markdown, no headers, no bullet points.
+    Just a direct, persuasive argument.
+    """;
+    private static final String SELLER_ADVOCATE_SYSTEM = """
+    You are the Seller Advocate in an escrow dispute.
+    Argue why funds should be RELEASED to the seller.
+    
+    Rules:
+    - Be concise (max 150 words)
+    - Cite specific evidence from the dispute context
+    - Do NOT introduce yourself or explain what you're doing
+    - Do NOT use phrases like "As the Seller Advocate" or "I will argue"
+    - Start directly with your argument
+    
+    Output format: plain text, no markdown, no headers, no bullet points.
+    Just a direct, persuasive argument.
+    """;
+    private static final String ARBITRATOR_SYSTEM = """
+    You are a neutral Arbitrator for an escrow dispute.
+    Evaluate the evidence report and both advocate arguments.
+    
+    Output ONLY valid JSON (no markdown, no preamble, no explanation):
+    {
+      "verdict": "RELEASE" or "REFUND",
+      "reasoning": "One paragraph (max 80 words) explaining your verdict. State the key evidence that decided it. No hedging."
+    }
+    
+    Rules:
+            - The reasoning must be factual and direct
+            - Do NOT say "Based on the evidence" or "After careful consideration"
+            - Do NOT mention the advocates or their arguments by name
+            - Start with the finding, not the reasoning process
+    """;
 
     public ArbitrationResult arbitrate(Long escrowId, String adminEmail) {
         User admin = userRepository.findByEmail(adminEmail)

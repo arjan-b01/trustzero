@@ -19,14 +19,6 @@ public class DisputeArbitrationController {
 
     private final DisputeArbitrationService arbitrationService;
 
-    @PostMapping("/{escrowId}/arbitrate")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ArbitrationResult> arbitrate(
-            @PathVariable Long escrowId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(arbitrationService.arbitrate(escrowId, userDetails.getUsername()));
-    }
-
     @PostMapping(value = "/{escrowId}/arbitrate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public Flux<ArbitrationEvent> arbitrateStream(

@@ -11,18 +11,33 @@ public record ArbitrationEvent(
         Object data            // optional structured payload (agent results, verdict, etc.)
 ) {
     public static ArbitrationEvent agentStart(String agent) {
+        String displayName = switch (agent) {
+            case "evidence_analyst" -> "Evidence Analyst";
+            case "buyer_advocate"   -> "Buyer Advocate";
+            case "seller_advocate"  -> "Seller Advocate";
+            case "arbitrator"       -> "Arbitrator";
+            default -> agent;
+        };
         return new ArbitrationEvent("agent_start", agent,
-                "Agent " + agent + " is starting analysis...", null);
+                displayName + " — analyzing", null);
     }
 
     public static ArbitrationEvent agentComplete(String agent, Object result) {
+        String displayName = switch (agent) {
+            case "evidence_analyst" -> "Evidence Analyst";
+            case "buyer_advocate"   -> "Buyer Advocate";
+            case "seller_advocate"  -> "Seller Advocate";
+            case "arbitrator"       -> "Arbitrator";
+            default -> agent;
+        };
         return new ArbitrationEvent("agent_complete", agent,
-                "Agent " + agent + " completed.", result);
+                displayName + " — complete", result);
     }
 
     public static ArbitrationEvent verdict(String verdict, double confidence, String reasoning) {
+        String verdictLabel = "REFUND".equals(verdict) ? "Refund to Buyer" : "Release to Seller";
         return new ArbitrationEvent("verdict", "arbitrator",
-                "Verdict: " + verdict + " (Confidence: " + confidence + ")",
+                "Verdict: " + verdictLabel + " (Confidence: " + confidence + ")",
                 new VerdictData(verdict, confidence, reasoning));
     }
 

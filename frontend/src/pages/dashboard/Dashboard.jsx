@@ -27,6 +27,7 @@ export const Dashboard = () => {
     queryKey: ['wallet', userEmail],
     queryFn: () => walletService.getMyWallet(),
     enabled: !!userEmail,
+    refetchInterval: 5000,
   });
 
   // 2. Fetch Escrow List
@@ -34,6 +35,7 @@ export const Dashboard = () => {
     queryKey: ['escrows', userEmail],
     queryFn: () => escrowService.getEscrowList(),
     enabled: !!userEmail,
+    refetchInterval: 5000,
   });
 
   // 3. Compute Metrics
@@ -148,7 +150,7 @@ export const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/40 bg-white/20">
-                  {escrows.slice(0, 5).map((escrow) => {
+                  {[...escrows].sort((a, b) => b.id - a.id).slice(0, 5).map((escrow) => {
                     const isUserBuyer = escrow.buyerName === currentUser?.name;
                     return (
                       <tr key={escrow.id} className="text-text-secondary hover:text-text-primary hover:bg-white/30 transition-all">

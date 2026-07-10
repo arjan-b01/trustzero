@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   Send,
   Loader,
-  Hammer
+  Hammer,
+  Upload,
+  Plus
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -66,14 +68,19 @@ export const EscrowDetails = () => {
     retry: false
   });
 
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [proofFile, setProofFile] = useState(null);
+  const [proofDescription, setProofDescription] = useState('');
   const [uploadLoading, setUploadLoading] = useState(false);
 
-  const handleUploadEvidence = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error("VLM analyzer only supports image files.");
+  const handleSubmitProof = async (e) => {
+    e.preventDefault();
+    if (!proofFile) {
+      toast.error("Please select a proof file (image or video) to upload.");
+      return;
+    }
+    if (!proofDescription.trim()) {
+      toast.error("Description is required to explain the context of your evidence.");
       return;
     }
 
@@ -81,16 +88,18 @@ export const EscrowDetails = () => {
     const isBuyer = escrow?.buyerName === currentUser?.name;
     const isSeller = escrow?.sellerName === currentUser?.name;
     const party = isBuyer ? 'BUYER' : isSeller ? 'SELLER' : 'BUYER';
-    const context = `Evidence upload by ${currentUser?.name} for contract #${id}`;
 
     toast.promise(
-      disputeService.uploadEvidence(id, file, party, context),
+      disputeService.uploadEvidence(id, proofFile, party, proofDescription),
       {
         loading: 'Uploading evidence & running VLM analyzer...',
         success: (data) => {
           refetchEvidence();
           setUploadLoading(false);
-          return `Analyzed! VLM: ${data.vlmAnalysis.substring(0, 55)}...`;
+          setShowProofModal(false);
+          setProofFile(null);
+          setProofDescription('');
+          return `Evidence uploaded successfully!`;
         },
         error: (err) => {
           setUploadLoading(false);
@@ -100,6 +109,8 @@ export const EscrowDetails = () => {
     );
   };
 
+  const [selectedImage, setSelectedImage] = useState(null);
+
   // 3. Fund Escrow Mutation
   const fundMutation = useMutation({
     mutationFn: () => escrowService.fundEscrow(userEmail, id),
@@ -107,6 +118,7 @@ export const EscrowDetails = () => {
       toast.success('Escrow funded successfully! Funds are now locked.');
       queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
       queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+      queryClient.invalidateQueries({ queryKey: ['escrows'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Funding failed.');
@@ -120,6 +132,7 @@ export const EscrowDetails = () => {
       toast.success('Funds released to the seller!');
       queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
       queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+      queryClient.invalidateQueries({ queryKey: ['escrows'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Release failed.');
@@ -135,6 +148,7 @@ export const EscrowDetails = () => {
       reset();
       queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
       queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+      queryClient.invalidateQueries({ queryKey: ['escrows'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to open dispute.');
@@ -150,6 +164,7 @@ export const EscrowDetails = () => {
       resetResolve();
       queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
       queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+      queryClient.invalidateQueries({ queryKey: ['escrows'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to resolve dispute.');
@@ -165,6 +180,7 @@ export const EscrowDetails = () => {
       resetSeller();
       queryClient.invalidateQueries({ queryKey: ['escrow', id, userEmail] });
       queryClient.invalidateQueries({ queryKey: ['escrow-history', id] });
+      queryClient.invalidateQueries({ queryKey: ['escrows'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || 'Failed to submit response.');
@@ -500,53 +516,75 @@ export const EscrowDetails = () => {
 
             {/* Upload Button */}
             {(isBuyer || isSeller) && (escrow.status === 'FUNDED' || escrow.status === 'DISPUTED') && (
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-text-secondary">Upload Screen/Proof Image</label>
-                <div className="flex items-center justify-center border-2 border-dashed border-white/85 rounded-2xl p-4 bg-white/20 hover:bg-white/30 transition-all cursor-pointer relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadEvidence}
-                    disabled={uploadLoading}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <div className="text-center text-xs text-text-secondary font-semibold">
-                    {uploadLoading ? (
-                      <Loader className="h-5 w-5 animate-spin mx-auto text-[#8B5CF6]" />
-                    ) : (
-                      <span>Click to upload proof screenshot</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <button
+                onClick={() => setShowProofModal(true)}
+                className="w-full btn-primary flex items-center justify-center space-x-2 px-5 py-3 text-sm font-semibold cursor-pointer shadow-md"
+              >
+                <Plus className="h-4.5 w-4.5" />
+                <span>Add Proof</span>
+              </button>
             )}
 
             {/* Evidence List */}
             {evidenceList.length === 0 ? (
-              <p className="text-xs text-text-muted text-center font-medium">No visual evidence records found.</p>
+              <div className="text-center py-6 text-text-muted text-xs bg-white/20 rounded-2xl p-4 border border-white/60">
+                <p className="font-semibold">No proof has been uploaded yet. Click "Add Proof" to submit evidence.</p>
+              </div>
             ) : (
               <div className="space-y-4">
                 {evidenceList.map((ev) => (
                   <div key={ev.id} className="border border-white/60 bg-white/30 rounded-2xl p-3.5 text-xs space-y-2.5">
                     <div className="flex items-center justify-between text-[10px] text-text-muted font-bold uppercase tracking-wider">
                       <span className={ev.party === 'BUYER' ? 'text-[#8B5CF6]' : 'text-[#FF7EB6]'}>
-                        {ev.party}: {ev.fileName}
+                        Uploaded By: {ev.party}
                       </span>
                       <span className={`px-2.5 py-0.5 rounded-full ${ev.analysisStatus === 'ANALYZED' ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/20' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20'}`}>
                         {ev.analysisStatus}
                       </span>
                     </div>
                     
-                    {/* Image Preview */}
-                    <img 
-                      src={ev.fileUrl} 
-                      alt={ev.fileName} 
-                      className="w-full h-32 object-cover rounded-xl border border-white/50"
-                    />
+                    {/* File Preview */}
+                    {ev.fileType && ev.fileType.startsWith('video/') ? (
+                      <div className="relative overflow-hidden rounded-xl border border-white/50 bg-black/10">
+                        <video 
+                          src={ev.fileUrl} 
+                          controls
+                          className="w-full h-32 object-cover rounded-xl"
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => setSelectedImage(ev)} 
+                        className="cursor-zoom-in group relative overflow-hidden rounded-xl border border-white/50"
+                      >
+                        <img 
+                          src={ev.fileUrl} 
+                          alt={ev.fileName} 
+                          className="w-full h-32 object-cover group-hover:scale-105 transition-all duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300">
+                          <span className="text-[10px] text-white font-bold bg-black/40 rounded-full px-3 py-1 backdrop-blur-xs">Click to Zoom</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-text-secondary leading-relaxed bg-white/50 p-2.5 rounded-xl border border-white/60 font-semibold">
+                      <strong>Description:</strong> {ev.description || "No context description provided."}
+                    </p>
                     
                     <p className="text-[10px] text-text-secondary font-semibold leading-relaxed bg-white/40 p-2.5 rounded-xl border border-white/60">
                       <strong>VLM Summary:</strong> {ev.vlmAnalysis}
                     </p>
+
+                    <div className="flex items-center justify-between text-[9px] text-text-muted font-bold uppercase tracking-wider border-t border-white/40 pt-2">
+                      <span>{new Date(ev.uploadedAt).toLocaleString()}</span>
+                      <button 
+                        onClick={() => toast.error("Audit log locking: evidence cannot be deleted once analyzed by the VLM.")}
+                        className="text-danger hover:underline font-bold bg-transparent border-none cursor-pointer text-[9px]"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -754,6 +792,126 @@ export const EscrowDetails = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PROOF UPLOAD MODAL */}
+      <AnimatePresence>
+        {showProofModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-[28px] glass-panel p-7 shadow-2xl space-y-4 bg-white/80 border-white"
+            >
+              <h3 className="text-lg font-bold text-text-primary flex items-center space-x-2">
+                <ShieldCheck className="h-5 w-5 text-[#8B5CF6]" />
+                <span>Submit Visual Evidence</span>
+              </h3>
+
+              <form onSubmit={handleSubmitProof} className="space-y-4 text-sm text-text-secondary">
+                {/* File input */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1">
+                    Upload Screen/Proof File (Image or Video)
+                  </label>
+                  <div className="flex items-center justify-center border-2 border-dashed border-white/90 rounded-2xl p-4 bg-white/20 hover:bg-white/30 transition-all cursor-pointer relative">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      required
+                    />
+                    <div className="text-center text-xs text-text-secondary font-semibold">
+                      {proofFile ? (
+                        <span className="text-[#8B5CF6] font-bold block truncate max-w-[250px]">
+                          Selected: {proofFile.name}
+                        </span>
+                      ) : (
+                        <span>Click to select screenshot or video file</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1">
+                    Proof Context / Description (Required)
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="block w-full glass-input p-3 text-xs focus:outline-none transition-all"
+                    placeholder="Provide a detailed description of what this proof represents..."
+                    value={proofDescription}
+                    onChange={(e) => setProofDescription(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProofModal(false);
+                      setProofFile(null);
+                      setProofDescription('');
+                    }}
+                    className="btn-secondary px-4 py-2 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploadLoading}
+                    className="flex items-center space-x-1.5 rounded-full bg-gradient-to-r from-[#7B61FF] to-[#FF7EB6] text-white px-5 py-2 text-xs font-bold shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {uploadLoading ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    <span>Upload & Analyze</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 cursor-zoom-out"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl bg-white/10 p-2 border border-white/20 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={selectedImage.fileUrl} 
+                alt={selectedImage.fileName} 
+                className="max-w-full max-h-[80vh] rounded-xl object-contain"
+              />
+              <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-xs text-white text-xs font-semibold p-3.5 rounded-xl border border-white/10 flex items-center justify-between">
+                <span>{selectedImage.fileName} ({selectedImage.party} Evidence)</span>
+                <button 
+                  onClick={() => setSelectedImage(null)}
+                  className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-2.5 py-1 transition-all cursor-pointer font-bold border-none"
+                >
+                  Close
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

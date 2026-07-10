@@ -43,6 +43,9 @@ public class Evidence {
     @Column(length = 20)
     private String analysisStatus; // "PENDING", "ANALYZED", "FAILED"
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime uploadedAt;

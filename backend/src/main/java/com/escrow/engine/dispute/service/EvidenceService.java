@@ -45,8 +45,10 @@ public class EvidenceService {
 
         // Validate file type
         String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("Only image files are supported for VLM analysis. Got: " + contentType);
+        boolean isImage = contentType != null && contentType.startsWith("image/");
+        boolean isVideo = contentType != null && contentType.startsWith("video/");
+        if (!isImage && !isVideo) {
+            throw new IllegalArgumentException("Only image and video files are supported. Got: " + contentType);
         }
 
         try {
@@ -73,12 +75,19 @@ public class EvidenceService {
             String fileUrl = "/api/evidence/files/" + storedFilename;
 
             // Analyze image with VLM
-            log.info("Analyzing evidence image with VLM for escrow {}", escrowId);
-            byte[] imageBytes = file.getBytes();
-            String vlmAnalysis = visionAnalyzer.analyzeImage(imageBytes, contentType, context);
-
-            String analysisStatus = vlmAnalysis.startsWith("VISION_ANALYSIS_FAILED")
-                    ? "FAILED" : "ANALYZED";
+            String vlmAnalysis;
+            String analysisStatus;
+            if (isImage) {
+                log.info("Analyzing evidence image with VLM for escrow {}", escrowId);
+                byte[] imageBytes = file.getBytes();
+                vlmAnalysis = visionAnalyzer.analyzeImage(imageBytes, contentType, context);
+                analysisStatus = vlmAnalysis.startsWith("VISION_ANALYSIS_FAILED")
+                        ? "FAILED" : "ANALYZED";
+            } else {
+                log.info("Skipping VLM analysis for video evidence in escrow {}", escrowId);
+                vlmAnalysis = "Video file uploaded. VLM visual analysis is only supported for image formats.";
+                analysisStatus = "ANALYZED";
+            }
 
             // Save evidence record
             Evidence evidence = Evidence.builder()
@@ -89,6 +98,7 @@ public class EvidenceService {
                     .fileUrl(fileUrl)
                     .vlmAnalysis(vlmAnalysis)
                     .analysisStatus(analysisStatus)
+                    .description(context)
                     .build();
 
             Evidence saved = evidenceRepository.save(evidence);

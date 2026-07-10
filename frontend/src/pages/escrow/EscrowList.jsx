@@ -14,6 +14,7 @@ export const EscrowList = () => {
     queryKey: ['escrows', userEmail],
     queryFn: () => escrowService.getEscrowList(),
     enabled: !!userEmail,
+    refetchInterval: 5000,
   });
 
   // Filters State
@@ -21,20 +22,21 @@ export const EscrowList = () => {
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
-  // Filter Logic
-  const filteredEscrows = escrows.filter((escrow) => {
-    const matchesSearch = escrow.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          escrow.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const isUserBuyer = escrow.buyerName === currentUser?.name;
-    const matchesRole = roleFilter === 'ALL' ||
-                        (roleFilter === 'BUYER' && isUserBuyer) ||
-                        (roleFilter === 'SELLER' && !isUserBuyer);
+  const filteredEscrows = escrows
+    .filter((escrow) => {
+      const matchesSearch = escrow.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            escrow.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const isUserBuyer = escrow.buyerName === currentUser?.name;
+      const matchesRole = roleFilter === 'ALL' ||
+                          (roleFilter === 'BUYER' && isUserBuyer) ||
+                          (roleFilter === 'SELLER' && !isUserBuyer);
 
-    const matchesStatus = statusFilter === 'ALL' || escrow.status === statusFilter;
+      const matchesStatus = statusFilter === 'ALL' || escrow.status === statusFilter;
 
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+      return matchesSearch && matchesRole && matchesStatus;
+    })
+    .sort((a, b) => b.id - a.id);
 
   return (
     <div className="space-y-8">

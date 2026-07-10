@@ -34,6 +34,10 @@ export const DisputeDetails = () => {
 
   const [activeAgentTab, setActiveAgentTab] = useState('arbitrator'); // buyer, seller, arbitrator
   const [pipelineStep, setPipelineStep] = useState(0); // For animating step progress during arbitration
+  const [buyerStep, setBuyerStep] = useState('idle'); // 'idle' | 'processing' | 'completed'
+  const [sellerStep, setSellerStep] = useState('idle');
+  const [arbitratorStep, setArbitratorStep] = useState('idle');
+  const [fsmStep, setFsmStep] = useState('idle');
 
   const [chatMessages, setChatMessages] = useState([
     {
@@ -134,30 +138,48 @@ export const DisputeDetails = () => {
     setStreamVerdict('');
     setStreamConfidence(0);
     setStreamAutoExecuted(false);
-
+    
+    setBuyerStep('processing');
+    setSellerStep('idle');
+    setArbitratorStep('idle');
+    setFsmStep('idle');
+ 
     const token = authService.getToken();
     const eventSource = new EventSource(`/api/escrow/${id}/arbitrate/stream?token=${token}`);
-
+ 
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
         console.log("Arbitration Stream Event:", parsed);
-
+ 
         if (parsed.type === 'progress') {
           toast.loading(parsed.message, { id: 'arb-stream-toast' });
         } else if (parsed.type === 'agent_start') {
           if (parsed.agent === 'evidence_analyst') {
             setPipelineStep(1);
-          } else if (parsed.agent === 'buyer_advocate' || parsed.agent === 'seller_advocate') {
+            setBuyerStep('processing');
+          } else if (parsed.agent === 'buyer_advocate') {
             setPipelineStep(2);
+            setBuyerStep('processing');
+          } else if (parsed.agent === 'seller_advocate') {
+            setPipelineStep(2);
+            setBuyerStep('completed');
+            setSellerStep('processing');
           } else if (parsed.agent === 'arbitrator') {
             setPipelineStep(3);
+            setBuyerStep('completed');
+            setSellerStep('completed');
+            setArbitratorStep('processing');
           }
         } else if (parsed.type === 'agent_complete') {
           if (parsed.agent === 'buyer_advocate') {
             setStreamBuyerArg(parsed.message || parsed.data);
+            setBuyerStep('completed');
+            setSellerStep('processing');
           } else if (parsed.agent === 'seller_advocate') {
             setStreamSellerArg(parsed.message || parsed.data);
+            setSellerStep('completed');
+            setArbitratorStep('processing');
           }
         } else if (parsed.type === 'verdict') {
           // Verdict data
@@ -167,9 +189,18 @@ export const DisputeDetails = () => {
           setStreamReasoning(vData.reasoning);
           setStreamAutoExecuted(vData.confidence >= 0.75);
           setPipelineStep(4);
-
+          
+          setBuyerStep('completed');
+          setSellerStep('completed');
+          setArbitratorStep('completed');
+          setFsmStep('processing');
+ 
           toast.success(`Verdict Generated: ${vData.verdict} (Confidence: ${(vData.confidence * 100).toFixed(0)}%)`, { id: 'arb-stream-toast' });
-
+ 
+          setTimeout(() => {
+            setFsmStep('completed');
+          }, 1500);
+ 
           setTimeout(() => {
             eventSource.close();
             setIsArbitrating(false);
@@ -186,7 +217,7 @@ export const DisputeDetails = () => {
         console.error("SSE JSON parse error:", err);
       }
     };
-
+ 
     eventSource.onerror = (err) => {
       console.log("EventSource closed or disconnected.", err);
       // Fallback clean up
@@ -223,13 +254,71 @@ export const DisputeDetails = () => {
   // Render Pipeline Status
   const getPipelineStatusText = () => {
     if (isArbitrating) {
-      if (pipelineStep === 1) return "Evidence Analyst AI is evaluating claims and visual evidence...";
-      if (pipelineStep === 2) return "Advocate AIs are formulating parallel claims...";
-      if (pipelineStep === 3) return "Neutral Arbitrator AI is resolving conflict...";
+      if (buyerStep === 'processing') return "Analyzing Buyer's Evidence...";
+      if (sellerStep === 'processing') return "Analyzing Seller's Evidence...";
+      if (arbitratorStep === 'processing') return "Evaluating arguments & deciding verdict...";
+      if (fsmStep === 'processing') return "Validating confidence score & final resolution...";
       return "Running Spring FSM confidence checks...";
     }
     return "Arbitration pipeline ready.";
   };
+
+  const isBuyerCompleted = hasArbitrationResult || buyerStep === 'completed';
+  const isSellerCompleted = hasArbitrationResult || sellerStep === 'completed';
+  const isArbitratorCompleted = hasArbitrationResult || arbitratorStep === 'completed';
+  const isFsmCompleted = hasArbitrationResult || fsmStep === 'completed';
+
+  const buyerBorder = isBuyerCompleted 
+    ? 'border-[#10B981] bg-[#10B981]/5 text-text-primary shadow-sm' 
+    : (buyerStep === 'processing' 
+      ? 'border-[#8B5CF6] bg-white/85 text-text-primary shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-pulse' 
+      : 'border-white/70 text-text-muted bg-white/30');
+
+  const buyerIconBg = isBuyerCompleted 
+    ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
+    : (buyerStep === 'processing' 
+      ? 'bg-[#8B5CF6]/20 text-[#8B5CF6] border border-[#8B5CF6]/30 animate-pulse scale-105' 
+      : 'bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20');
+
+  const sellerBorder = isSellerCompleted 
+    ? 'border-[#10B981] bg-[#10B981]/5 text-text-primary shadow-sm' 
+    : (sellerStep === 'processing' 
+      ? 'border-[#8B5CF6] bg-white/85 text-text-primary shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-pulse' 
+      : 'border-white/70 text-text-muted bg-white/30');
+
+  const sellerIconBg = isSellerCompleted 
+    ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
+    : (sellerStep === 'processing' 
+      ? 'bg-[#FF7EB6]/20 text-[#FF7EB6] border border-[#FF7EB6]/30 animate-pulse scale-105' 
+      : 'bg-[#FF7EB6]/10 text-[#FF7EB6] border border-[#FF7EB6]/20');
+
+  const arbitratorBorder = isArbitratorCompleted 
+    ? 'border-[#10B981] bg-[#10B981]/5 text-text-primary shadow-sm' 
+    : (arbitratorStep === 'processing' 
+      ? 'border-[#8B5CF6] bg-white/85 text-text-primary shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-pulse' 
+      : 'border-white/70 text-text-muted bg-white/30');
+
+  const arbitratorIconBg = isArbitratorCompleted 
+    ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
+    : (arbitratorStep === 'processing' 
+      ? 'bg-[#FFC371]/20 text-[#D97706] border border-[#FFC371]/30 animate-pulse scale-105' 
+      : 'bg-[#FFC371]/15 text-[#D97706] border border-[#FFC371]/25');
+
+  const fsmBorder = isFsmCompleted 
+    ? 'border-[#10B981] bg-[#10B981]/5 text-text-primary shadow-sm' 
+    : (fsmStep === 'processing' 
+      ? 'border-[#8B5CF6] bg-white/85 text-text-primary shadow-[0_0_15px_rgba(139,92,246,0.4)] animate-pulse' 
+      : 'border-white/70 text-text-muted bg-white/30');
+
+  const fsmIconBg = isFsmCompleted 
+    ? 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20' 
+    : (fsmStep === 'processing' 
+      ? 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30 animate-pulse scale-105' 
+      : 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20');
+
+  const arrow1Class = buyerStep === 'processing' ? 'text-[#8B5CF6] animate-pulse scale-110' : 'text-text-muted/65';
+  const arrow2Class = sellerStep === 'processing' ? 'text-[#8B5CF6] animate-pulse scale-110' : 'text-text-muted/65';
+  const arrow3Class = arbitratorStep === 'processing' ? 'text-[#8B5CF6] animate-pulse scale-110' : 'text-text-muted/65';
 
   return (
     <div className="space-y-8">
@@ -270,70 +359,58 @@ export const DisputeDetails = () => {
               {/* Buyer Advocate */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
-                    ? 'border-[#8B5CF6] bg-white/80 text-text-primary shadow-sm'
-                    : 'border-white/70 text-text-muted bg-white/30'
-                  }`}
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${buyerBorder}`}
               >
-                <div className="h-10 w-10 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] border border-[#8B5CF6]/20 flex items-center justify-center mb-2.5">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-2.5 transition-all duration-300 ${buyerIconBg}`}>
                   <BrainCircuit className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-bold">Buyer Advocate</span>
                 <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted mt-1.5">Argues Refund</span>
               </motion.div>
-
-              <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
-
+ 
+              <ChevronRight className={`hidden md:block h-6 w-6 transition-all duration-300 ${arrow1Class}`} />
+ 
               {/* Seller Advocate */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
-                    ? 'border-[#FF7EB6] bg-white/80 text-text-primary shadow-sm'
-                    : 'border-white/70 text-text-muted bg-white/30'
-                  }`}
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${sellerBorder}`}
               >
-                <div className="h-10 w-10 rounded-full bg-[#FF7EB6]/10 text-[#FF7EB6] border border-[#FF7EB6]/20 flex items-center justify-center mb-2.5">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-2.5 transition-all duration-300 ${sellerIconBg}`}>
                   <BrainCircuit className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-bold">Seller Advocate</span>
                 <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted mt-1.5">Argues Release</span>
               </motion.div>
-
-              <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
-
+ 
+              <ChevronRight className={`hidden md:block h-6 w-6 transition-all duration-300 ${arrow2Class}`} />
+ 
               {/* Neutral Arbitrator */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
-                    ? 'border-[#FFC371] bg-white/80 text-text-primary shadow-sm'
-                    : 'border-white/70 text-text-muted bg-white/30'
-                  }`}
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${arbitratorBorder}`}
               >
-                <div className="h-10 w-10 rounded-full bg-[#FFC371]/15 text-[#D97706] border border-[#FFC371]/25 flex items-center justify-center mb-2.5">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-2.5 transition-all duration-300 ${arbitratorIconBg}`}>
                   <Gavel className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-bold">Neutral Arbitrator</span>
                 <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted mt-1.5">Decides Verdict</span>
               </motion.div>
-
-              <ChevronRight className="hidden md:block h-6 w-6 text-text-muted/65" />
-
+ 
+              <ChevronRight className={`hidden md:block h-6 w-6 transition-all duration-300 ${arrow3Class}`} />
+ 
               {/* Confidence check */}
               <motion.div
                 whileHover={{ scale: 1.03 }}
-                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${hasArbitrationResult
-                    ? 'border-[#10B981] bg-white/80 text-text-primary shadow-sm'
-                    : 'border-white/70 text-text-muted bg-white/30'
-                  }`}
+                className={`flex flex-col items-center p-4.5 rounded-2xl border text-center max-w-[130px] transition-all shadow-2xs ${fsmBorder}`}
               >
-                <div className="h-10 w-10 rounded-full bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20 flex items-center justify-center mb-2.5">
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center mb-2.5 transition-all duration-300 ${fsmIconBg}`}>
                   <Award className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-bold">Confidence Check</span>
                 <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted mt-1.5">Spring FSM</span>
               </motion.div>
             </div>
-
+ 
             {/* Arbitration Trigger Area */}
             {!hasArbitrationResult && (
               <div className="border-t border-white/60 pt-6 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -346,19 +423,24 @@ export const DisputeDetails = () => {
                     <p className="text-text-secondary mt-0.5 font-medium">{getPipelineStatusText()}</p>
                   </div>
                 </div>
-
+ 
                 {isAdmin ? (
                   <button
                     onClick={triggerArbitrationStream}
                     disabled={isArbitrating}
-                    className="btn-primary flex items-center space-x-2 px-5 py-2.5 text-sm font-semibold cursor-pointer disabled:opacity-50"
+                    className="btn-primary flex items-center space-x-2.5 px-6 py-3 text-sm font-bold shadow-md cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     {isArbitrating ? (
-                      <Loader className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader className="h-4.5 w-4.5 animate-spin" />
+                        <span>AI Arbitration in Progress...</span>
+                      </>
                     ) : (
-                      <Cpu className="h-4 w-4" />
+                      <>
+                        <Cpu className="h-4.5 w-4.5" />
+                        <span>Trigger AI Arbitration</span>
+                      </>
                     )}
-                    <span>Trigger AI Arbitration</span>
                   </button>
                 ) : (
                   <p className="text-[11px] text-[#D97706] bg-[#FFC371]/10 border border-[#FFC371]/35 rounded-xl p-2.5 max-w-xs font-medium leading-relaxed">

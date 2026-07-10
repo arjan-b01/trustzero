@@ -194,7 +194,6 @@ export const Register = () => {
                 >
                   <option value="BUYER" className="bg-[#FFFDFC] text-text-primary">BUYER (Funds Escrows)</option>
                   <option value="SELLER" className="bg-[#FFFDFC] text-text-primary">SELLER (Fulfills Deliverables)</option>
-                  <option value="ADMIN" className="bg-[#FFFDFC] text-text-primary">ADMIN (Oversees Disputes)</option>
                 </select>
               </div>
             </div>

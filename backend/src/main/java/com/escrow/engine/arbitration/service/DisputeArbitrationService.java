@@ -435,12 +435,20 @@ public class DisputeArbitrationService {
         // === AGENTS 1 & 2: ADVOCATES (run sequentially for demo readability) ===
         String disputeContext = buildContext(tx, record, evidenceSummary);
 
-        sink.tryEmitNext(ArbitrationEvent.agentStart("buyer_advocate"));
-        String buyerArgument = fireworksClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext);
-        sink.tryEmitNext(ArbitrationEvent.agentComplete("buyer_advocate", buyerArgument));
+        sink.tryEmitNext(ArbitrationEvent.progress("Both Advocates analyzing in parallel..."));
 
-        sink.tryEmitNext(ArbitrationEvent.agentStart("seller_advocate"));
-        String sellerArgument = fireworksClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext);
+        java.util.concurrent.CompletableFuture<String> buyerFuture = java.util.concurrent.CompletableFuture
+                .supplyAsync(() -> fireworksClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext));
+
+        java.util.concurrent.CompletableFuture<String> sellerFuture = java.util.concurrent.CompletableFuture
+                .supplyAsync(() -> fireworksClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext));
+
+        java.util.concurrent.CompletableFuture.allOf(buyerFuture, sellerFuture).join();
+
+        String buyerArgument = buyerFuture.join();
+        String sellerArgument = sellerFuture.join();
+
+        sink.tryEmitNext(ArbitrationEvent.agentComplete("buyer_advocate", buyerArgument));
         sink.tryEmitNext(ArbitrationEvent.agentComplete("seller_advocate", sellerArgument));
 
         // === AGENT 3: ARBITRATOR ===

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import escrowService from '../../services/escrow.service';
 import authService from '../../services/auth.service';
+import { getAbsoluteUrl } from '../../services/api';
 import {
   Gavel,
   ArrowLeft,
@@ -284,7 +285,8 @@ export const DisputeDetails = () => {
     setFsmStep('idle');
 
     const token = authService.getToken();
-    const eventSource = new EventSource(`/api/escrow/${id}/arbitrate/stream?token=${token}`);
+    const url = getAbsoluteUrl(`/api/escrow/${id}/arbitrate/stream?token=${token}`);
+    const eventSource = new EventSource(url);
 
     eventSource.onmessage = (event) => {
       try {

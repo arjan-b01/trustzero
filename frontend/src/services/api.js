@@ -1,11 +1,31 @@
 import axios from 'axios';
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+export const getAbsoluteUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  
+  const cleanBase = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  
+  if (path.startsWith('/api')) {
+    if (cleanBase.endsWith('/api')) {
+      return cleanBase + path.substring(4);
+    } else {
+      return cleanBase + path;
+    }
+  }
+  
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+};
 
 // Request Interceptor: Inject JWT Token
 api.interceptors.request.use(

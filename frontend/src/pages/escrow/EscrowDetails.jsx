@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import escrowService from '../../services/escrow.service';
 import auditService from '../../services/audit.service';
 import disputeService from '../../services/dispute.service';
+import { getAbsoluteUrl } from '../../services/api';
 import {
   Scroll,
   ShieldAlert,
@@ -558,7 +559,7 @@ export const EscrowDetails = () => {
                     {ev.fileType && ev.fileType.startsWith('video/') ? (
                       <div className="relative overflow-hidden rounded-xl border border-white/50 bg-black/10">
                         <video 
-                          src={ev.fileUrl} 
+                          src={getAbsoluteUrl(ev.fileUrl)} 
                           controls
                           className="w-full h-32 object-cover rounded-xl"
                         />
@@ -569,7 +570,7 @@ export const EscrowDetails = () => {
                         className="cursor-zoom-in group relative overflow-hidden rounded-xl border border-white/50"
                       >
                         <img 
-                          src={ev.fileUrl} 
+                          src={getAbsoluteUrl(ev.fileUrl)} 
                           alt={ev.fileName} 
                           className="w-full h-32 object-cover group-hover:scale-105 transition-all duration-300"
                         />
@@ -910,7 +911,7 @@ export const EscrowDetails = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <img 
-                src={selectedImage.fileUrl} 
+                src={getAbsoluteUrl(selectedImage.fileUrl)} 
                 alt={selectedImage.fileName} 
                 className="max-w-full max-h-[80vh] rounded-xl object-contain"
               />

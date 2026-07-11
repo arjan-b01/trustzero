@@ -85,8 +85,8 @@ export const EscrowDetails = () => {
     }
 
     setUploadLoading(true);
-    const isBuyer = escrow?.buyerName === currentUser?.name;
-    const isSeller = escrow?.sellerName === currentUser?.name;
+    const isBuyer = escrow.buyerId === currentUser?.userId;
+    const isSeller = escrow.sellerId === currentUser?.userId;
     const party = isBuyer ? 'BUYER' : isSeller ? 'SELLER' : 'BUYER';
 
     toast.promise(
@@ -472,6 +472,17 @@ export const EscrowDetails = () => {
                   </Link>
                 )}
               </>
+            )}
+
+            {/* Actions for RESOLVED state (RELEASED or REFUNDED) after a dispute */}
+            {(escrow.status === 'RELEASED' || escrow.status === 'REFUNDED') && disputeRecord && (
+              <Link
+                to={`/disputes/${escrow.id}`}
+                className="flex items-center space-x-2 rounded-full bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 hover:border-[#8B5CF6]/60 px-6 py-3.5 text-sm font-bold text-[#8B5CF6] transition-all cursor-pointer shadow-2xs hover:bg-[#8B5CF6]/15"
+              >
+                <Hammer className="h-4 w-4" />
+                <span>View AI Arbitration Hub</span>
+              </Link>
             )}
           </div>
         </div>

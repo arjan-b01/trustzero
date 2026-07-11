@@ -87,8 +87,8 @@ export const DisputeDetails = () => {
     setFsmStep('idle');
  
     const token = authService.getToken();
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
-    const eventSource = new EventSource(`${baseUrl}/escrow/${id}/arbitrate/stream?token=${token}`);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+    const eventSource = new EventSource(`${apiUrl}/escrow/${id}/arbitrate/stream?token=${token}`);
  
     eventSource.onmessage = async (event) => {
       try {

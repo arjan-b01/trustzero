@@ -795,16 +795,14 @@ export const DisputeDetails = () => {
                   </p>
                 </div>
 
-                {/* Rules */}
-                <div className="space-y-2.5 text-[10px] text-text-secondary font-semibold uppercase tracking-wider">
-                  <p className="font-bold text-text-muted text-[9px] tracking-widest">Calculated Business Rules</p>
-                  <div className="flex items-center justify-between border-b border-white/40 pb-2">
-                    <span className="normal-case">Has Hard Delivery Proof (DB check)</span>
-                    <span className="font-bold text-text-primary">YES (0.90 / 0.65)</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="normal-case">LLM Sentiment Has Clear Winner</span>
-                    <span className="font-bold text-text-primary">YES (0.90 / 0.70)</span>
+                {/* Verdict */}
+                <div className="space-y-2.5 text-[10px] text-text-secondary font-semibold uppercase tracking-wider mt-4">
+                  <p className="font-bold text-text-muted text-[9px] tracking-widest">Final AI Verdict</p>
+                  <div className={`p-3 rounded-xl border ${aiVerdict === 'RELEASE' ? 'bg-[#10B981]/10 border-[#10B981]/30 text-[#059669]' : aiVerdict === 'REFUND' ? 'bg-[#8B5CF6]/10 border-[#8B5CF6]/30 text-[#8B5CF6]' : 'bg-[#F59E0B]/10 border-[#F59E0B]/30 text-[#D97706]'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm">{aiVerdict || 'PENDING'}</span>
+                      <Gavel className="w-4 h-4 opacity-70" />
+                    </div>
                   </div>
                 </div>
               </motion.div>

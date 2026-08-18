@@ -3,5 +3,5 @@ services:
     name: trustzero-backend
     env: docker
     rootDir: backend
-    healthCheckPath: /api/auth/login
+    healthCheckPath: /api/health
     healthCheckGracePeriodSeconds: 300

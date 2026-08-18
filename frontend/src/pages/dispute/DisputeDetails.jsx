@@ -186,6 +186,7 @@ export const DisputeDetails = () => {
   const [streamVerdict, setStreamVerdict] = useState('');
   const [streamConfidence, setStreamConfidence] = useState(0);
   const [streamAutoExecuted, setStreamAutoExecuted] = useState(false);
+  const [streamError, setStreamError] = useState('');
 
   /* ── Panel visibility ─────────────────────────────────────────────────── */
   // Start open if the escrow URL was reached from the archive (already resolved)
@@ -265,6 +266,7 @@ export const DisputeDetails = () => {
   /* ── Arbitration stream ───────────────────────────────────────────────── */
   // Track how many advocates have completed so we know when to start arbitrator
   const advocatesCompleted = useRef(0);
+  const gotVerdict = useRef(false);
 
   const triggerArbitrationStream = () => {
     setIsArbitrating(true);
@@ -275,7 +277,9 @@ export const DisputeDetails = () => {
     setStreamVerdict('');
     setStreamConfidence(0);
     setStreamAutoExecuted(false);
+    setStreamError('');
     advocatesCompleted.current = 0;
+    gotVerdict.current = false;
 
     // Both advocates start simultaneously — parallel execution
     setBuyerStep('processing');
@@ -284,7 +288,12 @@ export const DisputeDetails = () => {
     setFsmStep('idle');
 
     const token = authService.getToken();
-    const eventSource = new EventSource(`/api/escrow/${id}/arbitrate/stream?token=${token}`);
+    // Same base URL as the axios layer — required in production where the
+    // frontend and backend live on different origins (Vercel + Render).
+    const apiBase = import.meta.env.VITE_API_URL || '/api';
+    const eventSource = new EventSource(
+      `${apiBase}/escrow/${id}/arbitrate/stream?token=${encodeURIComponent(token)}`
+    );
 
     eventSource.onmessage = (event) => {
       try {
@@ -330,6 +339,7 @@ export const DisputeDetails = () => {
 
         else if (parsed.type === 'verdict') {
           const v = parsed.data;
+          gotVerdict.current = true;
           setStreamReasoning(v.reasoning);
           setStreamVerdict(v.verdict);
           setStreamConfidence(v.confidence);
@@ -357,6 +367,7 @@ export const DisputeDetails = () => {
         }
 
         else if (parsed.type === 'error') {
+          setStreamError(`Arbitration failed: ${parsed.message}`);
           toast.error(`Arbitration failed: ${parsed.message}`, { id: 'arb-toast' });
           eventSource.close();
           setIsArbitrating(false);
@@ -367,6 +378,11 @@ export const DisputeDetails = () => {
     };
 
     eventSource.onerror = () => {
+      if (!gotVerdict.current) {
+        setStreamError(
+          'The arbitration stream failed to connect. Check that the backend is running and the API base URL (VITE_API_URL) points to it.'
+        );
+      }
       setTimeout(() => {
         eventSource.close();
         setIsArbitrating(false);
@@ -527,19 +543,27 @@ export const DisputeDetails = () => {
                 {/* Status */}
                 <div className="flex items-center space-x-3 text-xs">
                   <div className={`rounded-xl p-2 border ${
-                    isArbitrating
+                    streamError
+                      ? 'bg-[#EF4444]/15 border-[#EF4444]/30 text-[#EF4444]'
+                      : isArbitrating
                       ? 'bg-[#8B5CF6]/15 border-[#8B5CF6]/30 text-[#8B5CF6] animate-pulse'
                       : hasResult
                       ? 'bg-[#10B981]/15 border-[#10B981]/30 text-[#10B981]'
                       : 'bg-[#FFC371]/15 border-[#FFC371]/30 text-[#D97706] animate-pulse'
                   }`}>
-                    {isArbitrating ? <Radio className="h-4 w-4" /> : hasResult ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                    {streamError ? <AlertTriangle className="h-4 w-4" /> : isArbitrating ? <Radio className="h-4 w-4" /> : hasResult ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                   </div>
                   <div>
                     <p className="font-bold text-text-primary">
-                      {isArbitrating ? 'Live AI Arbitration Running' : hasResult ? 'Arbitration Complete' : 'Awaiting Arbitration'}
+                      {streamError
+                        ? 'Arbitration Failed to Start'
+                        : isArbitrating
+                        ? 'Live AI Arbitration Running'
+                        : hasResult
+                        ? 'Arbitration Complete'
+                        : 'Awaiting Arbitration'}
                     </p>
-                    <p className="text-text-secondary mt-0.5 font-medium">{getPipelineStatus()}</p>
+                    <p className="text-text-secondary mt-0.5 font-medium">{streamError || getPipelineStatus()}</p>
                   </div>
                 </div>
 
@@ -597,6 +621,11 @@ export const DisputeDetails = () => {
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#8B5CF6] bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 rounded-full px-3 py-1 uppercase tracking-wider">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] animate-ping" />
                           Live Stream
+                        </span>
+                      ) : streamError ? (
+                        <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-full px-3 py-1 uppercase tracking-wider">
+                          <AlertTriangle className="h-3 w-3" />
+                          Stream Failed
                         </span>
                       ) : (
                         <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 rounded-full px-3 py-1 uppercase tracking-wider">

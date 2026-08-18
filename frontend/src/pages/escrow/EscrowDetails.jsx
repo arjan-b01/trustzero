@@ -25,6 +25,17 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Evidence file URLs are stored relative to the backend ("/api/evidence/files/...").
+// Resolve them against the configured API base so images/videos actually load in
+// production, where the frontend and backend live on different origins (Vercel + Render).
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const resolveFileUrl = (url) => {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url; // already absolute
+  const path = url.replace(/^\/api/, ''); // "/api/evidence/..." -> "/evidence/..."
+  return `${API_BASE}${path}`;
+};
+
 export const EscrowDetails = () => {
   const { id } = useParams();
   const { currentUser } = useAuth();
@@ -549,7 +560,13 @@ export const EscrowDetails = () => {
                       <span className={ev.party === 'BUYER' ? 'text-[#8B5CF6]' : 'text-[#FF7EB6]'}>
                         Uploaded By: {ev.party}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-full ${ev.analysisStatus === 'ANALYZED' ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/20' : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20'}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full ${
+                        ev.analysisStatus === 'ANALYZED'
+                          ? 'bg-[#10B981]/15 text-[#059669] border border-[#10B981]/20'
+                          : ev.analysisStatus === 'SKIPPED'
+                          ? 'bg-[#FFC371]/15 text-[#D97706] border border-[#FFC371]/25'
+                          : 'bg-[#EF4444]/15 text-[#DC2626] border border-[#EF4444]/20'
+                      }`}>
                         {ev.analysisStatus}
                       </span>
                     </div>
@@ -558,7 +575,7 @@ export const EscrowDetails = () => {
                     {ev.fileType && ev.fileType.startsWith('video/') ? (
                       <div className="relative overflow-hidden rounded-xl border border-white/50 bg-black/10">
                         <video 
-                          src={ev.fileUrl} 
+                          src={resolveFileUrl(ev.fileUrl)} 
                           controls
                           className="w-full h-32 object-cover rounded-xl"
                         />
@@ -569,7 +586,7 @@ export const EscrowDetails = () => {
                         className="cursor-zoom-in group relative overflow-hidden rounded-xl border border-white/50"
                       >
                         <img 
-                          src={ev.fileUrl} 
+                          src={resolveFileUrl(ev.fileUrl)} 
                           alt={ev.fileName} 
                           className="w-full h-32 object-cover group-hover:scale-105 transition-all duration-300"
                         />
@@ -910,7 +927,7 @@ export const EscrowDetails = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <img 
-                src={selectedImage.fileUrl} 
+                src={resolveFileUrl(selectedImage.fileUrl)} 
                 alt={selectedImage.fileName} 
                 className="max-w-full max-h-[80vh] rounded-xl object-contain"
               />

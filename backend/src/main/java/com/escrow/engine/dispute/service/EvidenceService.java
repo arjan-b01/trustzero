@@ -86,7 +86,7 @@ public class EvidenceService {
             } else {
                 log.info("Skipping VLM analysis for video evidence in escrow {}", escrowId);
                 vlmAnalysis = "Video file uploaded. VLM visual analysis is only supported for image formats.";
-                analysisStatus = "ANALYZED";
+                analysisStatus = "SKIPPED";
             }
 
             // Save evidence record

@@ -27,7 +27,7 @@ export const EscrowList = () => {
       const matchesSearch = escrow.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             escrow.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const isUserBuyer = escrow.buyerName === currentUser?.name;
+      const isUserBuyer = escrow.buyerId === currentUser?.userId;
       const matchesRole = roleFilter === 'ALL' ||
                           (roleFilter === 'BUYER' && isUserBuyer) ||
                           (roleFilter === 'SELLER' && !isUserBuyer);
@@ -112,7 +112,7 @@ export const EscrowList = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredEscrows.map((escrow, i) => {
-            const isUserBuyer = escrow.buyerName === currentUser?.name;
+            const isUserBuyer = escrow.buyerId === currentUser?.userId;
             return (
               <motion.div
                 key={escrow.id}

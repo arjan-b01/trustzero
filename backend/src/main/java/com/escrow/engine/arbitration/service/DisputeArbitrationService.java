@@ -19,7 +19,6 @@ import reactor.core.publisher.Sinks;
 import com.escrow.engine.arbitration.dto.ArbitrationEvent;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.escrow.engine.arbitration.client.VllmClient;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -41,7 +40,6 @@ public class DisputeArbitrationService {
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
     private final EvidenceRepository evidenceRepository;
-    private final VllmClient vllmClient;
 
     public DisputeArbitrationService(
             FireworksClient fireworksClient,
@@ -53,8 +51,7 @@ public class DisputeArbitrationService {
             TransactionTemplate transactionTemplate,
             EvidenceFetcher evidenceFetcher,
             ObjectMapper objectMapper,
-            EvidenceRepository evidenceRepository,
-            VllmClient vllmClient) {
+            EvidenceRepository evidenceRepository) {
 
         this.fireworksClient = fireworksClient;
         this.escrowService = escrowService;
@@ -66,7 +63,6 @@ public class DisputeArbitrationService {
         this.evidenceFetcher = evidenceFetcher;
         this.objectMapper = objectMapper;
         this.evidenceRepository = evidenceRepository;
-        this.vllmClient = vllmClient;
     }
 
     private String upper(String s) {
@@ -205,7 +201,7 @@ public class DisputeArbitrationService {
                 "\n\nSeller Image Evidence (analyzed by Vision Model):\n" + sellerImageAnalyses;
 
         // CALL AGENT 0
-        String analystRaw = vllmClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
+        String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
         String evidenceStrength = "NONE";
         String evidenceSupports = "NEITHER";
@@ -226,8 +222,8 @@ public class DisputeArbitrationService {
         // AGENTS 1 & 2: THE ADVOCATES
         // ==========================================
         String disputeContext = buildContext(tx, record, evidenceSummary, evidenceContext);
-        String buyerArgument = vllmClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext);
-        String sellerArgument = vllmClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext);
+        String buyerArgument = fireworksClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext);
+        String sellerArgument = fireworksClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext);
 
         // ==========================================
         // AGENT 3: THE ARBITRATOR
@@ -425,7 +421,7 @@ public class DisputeArbitrationService {
 
         sink.tryEmitNext(ArbitrationEvent.agentStart("evidence_analyst"));
 
-        String analystRaw = vllmClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
+        String analystRaw = fireworksClient.call(EVIDENCE_ANALYST_SYSTEM, evidenceContext);
 
         String evidenceStrength = "NONE";
         String evidenceSupports = "NEITHER";
@@ -456,10 +452,10 @@ public class DisputeArbitrationService {
         sink.tryEmitNext(ArbitrationEvent.progress("Both Advocates analyzing in parallel on AMD GPU..."));
 
         java.util.concurrent.CompletableFuture<String> buyerFuture = java.util.concurrent.CompletableFuture
-                .supplyAsync(() -> vllmClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext));
+                .supplyAsync(() -> fireworksClient.call(BUYER_ADVOCATE_SYSTEM, disputeContext));
 
         java.util.concurrent.CompletableFuture<String> sellerFuture = java.util.concurrent.CompletableFuture
-                .supplyAsync(() -> vllmClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext));
+                .supplyAsync(() -> fireworksClient.call(SELLER_ADVOCATE_SYSTEM, disputeContext));
 
         java.util.concurrent.CompletableFuture.allOf(buyerFuture, sellerFuture).join();
 

@@ -151,7 +151,7 @@ export const Dashboard = () => {
                 </thead>
                 <tbody className="divide-y divide-white/40 bg-white/20">
                   {[...escrows].sort((a, b) => b.id - a.id).slice(0, 5).map((escrow) => {
-                    const isUserBuyer = escrow.buyerName === currentUser?.name;
+                    const isUserBuyer = escrow.buyerId === currentUser?.userId;
                     return (
                       <tr key={escrow.id} className="text-text-secondary hover:text-text-primary hover:bg-white/30 transition-all">
                         <td className="p-4 font-semibold text-text-primary max-w-[150px] truncate">{escrow.title}</td>

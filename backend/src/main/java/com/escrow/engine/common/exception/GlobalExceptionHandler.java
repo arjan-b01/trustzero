@@ -1,5 +1,6 @@
 package com.escrow.engine.common.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -64,6 +66,7 @@ public class GlobalExceptionHandler {
     // 400 Bad Request
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        log.error("Bad request: {}", ex.getMessage());
         return buildErrorResponse(
                 HttpStatus.BAD_REQUEST,
                 ex.getMessage(),
@@ -84,10 +87,7 @@ public class GlobalExceptionHandler {
     // Catch-all fallback
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {
-
-        // Ideally log ex here using SLF4J
-        // log.error("Unexpected error", ex);
-
+        log.error("Unexpected error", ex);
         return buildErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 ex.getMessage(),

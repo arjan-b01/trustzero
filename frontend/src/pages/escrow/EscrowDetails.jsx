@@ -114,7 +114,9 @@ export const EscrowDetails = () => {
         },
         error: (err) => {
           setUploadLoading(false);
-          return err.response?.data?.message || 'Failed to upload evidence.';
+          console.error('Evidence upload failed:', err);
+          // err.message === "Network Error" → the backend is unreachable, not a code bug.
+          return err.response?.data?.message || err.message || 'Failed to upload evidence.';
         }
       }
     );

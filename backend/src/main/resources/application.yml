@@ -34,7 +34,7 @@ fireworks:
     # Fireworks — used for Evidence Analyst + Arbitrator (strong reasoning) + Vision
     url: https://api.fireworks.ai/inference/v1/chat/completions
     key: ${FIREWORKS_API_KEY}
-    model: accounts/fireworks/models/glm-5p2
+    model: accounts/fireworks/models/deepseek-v4-flash-0731
     vision-model: accounts/fireworks/models/qwen3p7-plus
 
 # AMD vLLM — used for the two Advocates (fast, parallel, dedicated GPU)

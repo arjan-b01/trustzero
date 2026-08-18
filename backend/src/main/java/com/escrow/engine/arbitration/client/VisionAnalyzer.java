@@ -79,7 +79,8 @@ public class VisionAnalyzer {
 
             if (response.statusCode() != 200) {
                 log.error("Vision API returned {}: {}", response.statusCode(), response.body());
-                return "VISION_ANALYSIS_FAILED: HTTP " + response.statusCode();
+                return "VISION_ANALYSIS_FAILED (model " + visionModel + "): HTTP "
+                        + response.statusCode() + " " + response.body();
             }
 
             JsonNode rootNode = objectMapper.readTree(response.body());

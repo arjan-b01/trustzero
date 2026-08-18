@@ -602,8 +602,19 @@ export const EscrowDetails = () => {
                       <strong>Description:</strong> {ev.description || "No context description provided."}
                     </p>
                     
-                    <p className="text-[10px] text-text-secondary font-semibold leading-relaxed bg-white/40 p-2.5 rounded-xl border border-white/60">
-                      <strong>VLM Summary:</strong> {ev.vlmAnalysis}
+                    <p className={`text-[10px] font-semibold leading-relaxed p-2.5 rounded-xl border ${
+                      ev.analysisStatus === 'FAILED'
+                        ? 'bg-[#EF4444]/5 border-[#EF4444]/20 text-[#DC2626]'
+                        : 'bg-white/40 border-white/60 text-text-secondary'
+                    }`}>
+                      <strong>VLM Summary:</strong>{' '}
+                      {ev.vlmAnalysis
+                        ? ev.vlmAnalysis.startsWith('VISION_ANALYSIS_FAILED')
+                          ? `Analysis failed: ${ev.vlmAnalysis}`
+                          : ev.vlmAnalysis
+                        : ev.analysisStatus === 'ANALYZED'
+                        ? '(Vision model returned an empty response.)'
+                        : '(Not analyzed)'}
                     </p>
 
                     <div className="flex items-center justify-between text-[9px] text-text-muted font-bold uppercase tracking-wider border-t border-white/40 pt-2">
